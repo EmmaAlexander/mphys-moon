@@ -1,2 +1,2 @@
 # mphys-moon
- project information
+Information about the New Crescent Visibility MPhys project.
