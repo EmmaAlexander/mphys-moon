@@ -21,6 +21,7 @@ Optional extras:
 a. Additional section in literature review on cultural impact of the Moon/ astronomy in general (no more than 20\% of total lit review content).
 b. Evaluation of ways to present first visibility maps to allow for greatest accessibility, especially for months which have a large public interest (e.g. the Islamic month of Ramadan). Creation of resources to aid in public understanding of the lunar cycle and how to observe it. (No more than 10\% of total project time)
 
+---
 
 #### Useful Links
 
