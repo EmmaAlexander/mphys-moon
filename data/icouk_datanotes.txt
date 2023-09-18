@@ -1,0 +1,3 @@
+- Data source (with thanks to Qamar Uddin): https://www.moonsighting.org.uk/view-observation-results.html
+- Hunaston datapoint (16-Sept-23) added manually (source: Juned Patel, Facebook)
+- Fleetwood result of August 2023 may be less reliable 
