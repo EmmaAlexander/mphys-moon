@@ -26,7 +26,7 @@ b. Evaluation of ways to present first visibility maps to allow for greatest acc
 
 ### Getting started 
 
-1. Get setup with accounts on the JBCA computing system and the Galahad cluster. You will need to contact Dr Ant Holloway and/or Dr Sotirios Sanidas for this; Anna may also be coordinating for other MPhys students in her group. There is a JBCA-ICE Slack network to join. 
+1. Get setup with accounts on the JBCA computing system and the Galahad cluster. I will contact Dr Ant Holloway and/or Dr Sotirios Sanidas for this; Anna may also be coordinating for other MPhys students in her group. There is a JBCA-ICE Slack network to join. 
 2. Gain familiarity with running scripts on Galahad (linux environment). To begin with, Jupyter notebooks may be the easiest to use. A guide to running Jupyter on Galahad can be found [here](https://github.com/zhaotingchen/galahad_guide/blob/main/jupyter_on_galahad.md). 
 3. Conduct a literature review as described in the overall Work Plan. This is likely to take up at least the first couple of MPhys workdays (alongside computer setup — you may have to wait for logins to activate etc, so do this in parallel). Think of it as writing an early draft of your report's introduction section. Of course, as you progress through the project, different things may become more or less relevant.
 4. Dive into the world of ML with Python — lots of online resources for this! Lean about different types of ML algorithms (e.g. supervised vs unsupervised) and how they can suit different sorts of data.
