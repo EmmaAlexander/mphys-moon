@@ -31,6 +31,15 @@ b. Evaluation of ways to present first visibility maps to allow for greatest acc
 3. Conduct a literature review as described in the overall Work Plan. This is likely to take up at least the first couple of MPhys workdays (alongside computer setup — you may have to wait for logins to activate etc, so do this in parallel). Think of it as writing an early draft of your report's introduction section. Of course, as you progress through the project, different things may become more or less relevant.
 4. Dive into the world of ML with Python — lots of online resources for this! Lean about different types of ML algorithms (e.g. supervised vs unsupervised) and how they can suit different sorts of data.
 
+---
+
+### Possible lines of investigation
+
+1. Weather: cloud cover (percentage and direction), other atmospheric effects.
+2. Elevation (i.e. height obeservation is made from).
+3. Capabilities of human eye (resolution, dynamic range etc).
+4. Something else...?
+
 ----
 
 #### Useful Links
