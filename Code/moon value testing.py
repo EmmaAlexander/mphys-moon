@@ -14,8 +14,7 @@ from astropy.coordinates import  SkyCoord, EarthLocation, get_body, AltAz, solar
 from astroplan import Observer
 
 def get_moon_params(d,lat,lon):
-    
-    coords=EarthLocation.from_geodetic(lon*u.deg,lat*u.deg)
+    coords=EarthLocation.from_geodetic(lon=lon*u.deg,lat=lat*u.deg)
     print("Date:", d)
 
     #Get positions of Moon and Sun
@@ -39,7 +38,7 @@ def get_moon_params(d,lat,lon):
     print(f"Sun azimuth: {sun_altaz.az:.4}")
     
     #Get distance to Sun from moon
-    DIST =moon.separation_3d(sun)
+    DIST = moon.separation_3d(sun)
     print(f"DIST: {DIST:.2}")   
         
     #Calclate angular separation of moon and sun
@@ -70,20 +69,29 @@ def get_moon_params(d,lat,lon):
     print(f"q: {q:.4}")
 
 
-#Example - final value of Yollop data, should produce ARCL=5.5, ARCV=4.2, DAZ=3.6
-d=Time("1984-01-03 05:15") #5:15
+#Example - final value of Yollop data (no 256), should produce ARCL=5.5, ARCV=4.2, DAZ=3.6
+#Not currently working - currently gives  ARCL: 2.9 deg, ARCV: 2.0 deg, DAZ: 2.1 deg
+#d=Time("1984-01-03 05:15") #5:15
+d=Time("2445702.719",format='jd')
 lat=15.6 #latitude in degrees
 lon=35.6 #longitude in degrees
 
 get_moon_params(d, lat, lon)
 
 
-#Example - first value of Opeh data, should produce ARCL=5.5, ARCV=4.2, DAZ=3.6
+#Example - first value of Odeh data (no 514), produces ARCV=0.7, ARCL=5.8, DAZ=5.7 as expected
+#Note - this produces ARCL: 5.8 deg, ARCV: 0.73 deg, DAZ: 5.7 deg
 d=Time("2452318.180",format='jd')
-lat=18.4 #latitude in degrees
-lon=43.9 #longitude in degrees
-coords=EarthLocation.from_geodetic(lon*u.deg,lat*u.deg)
+lat = 43.9 #latitude in degrees
+lon = 18.4 #longitude in degrees
 
-get_moon_params(d, lat, lon)
+#get_moon_params(d, lat, lon)
+
+#Example - second value of Odeh data (no 565), also works
+d=Time("2452613.118",format='jd')
+lat = 30.9 #latitude in degrees
+lon = 35.8 #longitude in degrees
+
+#get_moon_params(d, lat, lon)
 
 
