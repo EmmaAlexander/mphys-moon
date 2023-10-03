@@ -11,9 +11,11 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import time
+import random
+from suncalc import get_times
 
 from astropy.time import Time
-from astropy.coordinates import Angle, Distance, EarthLocation, Longitude, Latitude
+from astropy.coordinates import Angle, EarthLocation, Longitude, Latitude
 from astropy.coordinates import get_body, AltAz, solar_system_ephemeris
 from astroplan import Observer
 from astropy.constants import R_earth
@@ -45,8 +47,9 @@ def get_best_obs_time(d,coords,display=False):
 
     obs = Observer(location=coords, timezone="UTC")
 
-    moonset=obs.moon_set_time(time=d,which='next')
-    sunset=obs.sun_set_time(time=d,which='next')
+    moonset=obs.moon_set_time(time=d,which='next',n_grid_points=150)
+    sunset=obs.sun_set_time(time=d,which='next',n_grid_points=150)
+
     LAG = (moonset.to_value("jd")-sunset.to_value("jd"))*24*60
 
     if display:
@@ -235,4 +238,69 @@ obs_date = Time("2023-09-16")
 #plot_visibilty_at_date(obs_date)
 
 obs_date = Time("2023-09-17")
-plot_visibilty_at_date(obs_date)
+#plot_visibilty_at_date(obs_date)
+
+#Timing tests -----------------------------------------------
+
+start = time.time()
+for i in range(10): #VERY SLOW - 2s/10
+    coords=EarthLocation.from_geodetic(lat=random.randint(-50,50),lon=random.randint(-180,180))
+    get_best_obs_time(obs_date,coords)
+print(time.time()-start)
+
+
+start = time.time() #SLOW - 0.3s/10
+for i in range(10):
+    d=obs_date
+    coords=EarthLocation.from_geodetic(lat=random.randint(-50,50),lon=random.randint(-180,180))
+    with solar_system_ephemeris.set('builtin'):
+        moon = get_body('moon',d,coords)
+        sun = get_body('sun',d,coords)
+        earth = get_body('earth',d,coords)
+print(time.time()-start)
+
+
+
+from skyfield import api
+
+ts = api.load.timescale()
+eph = api.load('de421.bsp')
+from skyfield import almanac
+
+start = time.time() #SLOW - 0.5s/10
+for i in range(10):
+    bluffton = api.wgs84.latlon(random.randint(-50,50),random.randint(-180,180))
+    t0 = ts.utc(2023,9,16)
+    t1 = ts.utc(2023,9,17)
+    t, y = almanac.find_discrete(t0, t1, almanac.sunrise_sunset(eph, bluffton))
+
+print(time.time()-start)
+
+start = time.time() #SLOW - 0.5s/10
+for i in range(10):
+    bluffton = api.wgs84.latlon(random.randint(-50,50),random.randint(-180,180))
+    t0 = ts.utc(2023,9,16)
+    t1 = ts.utc(2023,9,17)
+    f = almanac.risings_and_settings(eph, eph['Moon'], bluffton)
+    t, y = almanac.find_discrete(t0, t1, f)
+
+print(time.time()-start)
+
+#
+# start = time.time()
+# lat_arr = np.linspace(-50, 50, 10)
+# long_arr = np.linspace(-180, 180, 10)
+# bluffton = api.wgs84.latlon(lat_arr,long_arr)
+
+# t0 = ts.utc(2023,9,16)
+# t1 = ts.utc(2023,9,17)
+# f = almanac.risings_and_settings(eph, eph['Moon'], bluffton)
+# t, y = almanac.find_discrete(t0, t1, f)
+# print(time.time()-start)
+
+start = time.time() #FAST - 0.06/10 and array option
+for i in range(10):
+    d=obs_date.to_datetime()
+    get_times(d,lng=random.randint(-180,180),lat=random.randint(-50,50))["sunset"]
+
+print(time.time()-start)
