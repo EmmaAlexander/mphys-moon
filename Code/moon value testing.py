@@ -13,12 +13,18 @@ import cartopy.crs as ccrs
 import time
 import random
 from suncalc import get_times
+from datetime import timedelta
 
 from astropy.time import Time
 from astropy.coordinates import Angle, EarthLocation, Longitude, Latitude
 from astropy.coordinates import get_body, AltAz, solar_system_ephemeris
 from astroplan import Observer
 from astropy.constants import R_earth
+
+from skyfield import api
+ts = api.load.timescale()
+eph = api.load('de421.bsp')
+from skyfield import almanac
 
 #CALCULATING MOON Q-TEST VALUES -----------------------------------------------
 
@@ -31,6 +37,7 @@ def get_geocentric_parallax(object_position,distance):
     p = np.arcsin((a/r)*np.sin(z.radian))
     return Angle(p)
 
+
 def get_q_value(alt_diff, width):
     #Calculate q-test value
     #q = (ARCV − (11·8371 − 6·3226 W' + 0·7319 W' 2 − 0·1018 W' 3 )) / 10
@@ -42,8 +49,26 @@ def get_q_value(alt_diff, width):
     return q
 
 
-def get_best_obs_time(d,coords,display=False):
-    #Gets best time using Bruin's method
+def get_sunset_time(obs_date, lat_arr,long_arr):
+    #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
+    #DOESN'T WORK FOR INDIVIDUAL VALUES ----------------------------------------
+    #Gets array of sunset times
+    d = np.full(np.size(lat_arr),obs_date.to_datetime())
+    sunsets = get_times(d,lng=long_arr,lat=lat_arr)["sunset"]
+    return sunsets
+
+
+def get_moonset_time(obs_date,lat, lon):
+    #Gets moonset time using skyfield (MEDIUM)
+    bluffton = api.wgs84.latlon(lat,lon)
+    t0 = ts.from_astropy(obs_date)
+    t1 = ts.from_datetime(obs_date.to_datetime(timezone=api.utc)+timedelta(days=1))
+    t, y = almanac.find_discrete(t0, t1, almanac.sunrise_sunset(eph, bluffton))
+    return t[y==1].utc_iso()[0]
+
+
+def get_sunset_moonset(d,coords,display=False):
+    #Gets sunset and moonset using astroplan (VERY SLOW)
 
     obs = Observer(location=coords, timezone="UTC")
 
@@ -53,15 +78,26 @@ def get_best_obs_time(d,coords,display=False):
     LAG = (moonset.to_value("jd")-sunset.to_value("jd"))*24*60
 
     if display:
+        print(f"MOONSET: {moonset}")
+        print(f"SUNSET: {sunset}")
         print(f"LAG: {LAG:.5} mins") #Lag time
 
+    return sunset,moonset
+
+
+def get_best_obs_time(sunset, moonset):
+    #Gets best time using Bruin's method
+    
+    sunset = Time(sunset, scale='utc')
+    moonset = Time(moonset, scale='utc')
+    
     #Bruin best time Tb = (5 Ts +4 Tm)/ 9
     best_time = (1/9)*(5*sunset.to_value("jd")+4*moonset.to_value("jd"))
 
     return Time(best_time, format="jd")
 
 
-def get_moon_params(d,lat,lon,time_given=False,display=False):
+def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False):
     #This calculates the q-test value and other moon params
 
     #Create coordinates object
@@ -70,10 +106,17 @@ def get_moon_params(d,lat,lon,time_given=False,display=False):
     #Longitude is -180 to +180
     longitude = Longitude(lon*u.deg,wrap_angle=180*u.deg)
     coords=EarthLocation.from_geodetic(lon=longitude,lat=latitude)
-
+    
+    
     #Calculate best observation time if no time given
     if not time_given:
-        best_obs_time = get_best_obs_time(d, coords, display)
+        #Calculate sunset and moonset time if not given (SLOW)
+        if sunset == 0:
+            sunset = get_sunset_time(d,lat,lon)
+        if moonset == 0:
+            moonset = get_moonset_time(d,lat,lon)
+        
+        best_obs_time = get_best_obs_time(sunset,moonset)
         d = best_obs_time
 
     #Get positions of Moon and Sun
@@ -157,7 +200,6 @@ def get_moon_params(d,lat,lon,time_given=False,display=False):
 
 #Moon q-test value testing ---------------------------------------------------
 
-
 #Example - first value of Yollop data (no 37), should produce ARCL=40.3, ARCV=31.1, DAZ=-26.1
 #No time provided, usig best time which gives ARCL: 34.0, ARCV: 24.4, DAZ: 23.9
 obs_date=Time("1870-7-25")
@@ -187,21 +229,27 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-50, 50, 10)
-    long_arr = np.linspace(-180, 180, 10)
+    lat_arr = np.linspace(-60, 60, 15)
+    long_arr = np.linspace(-180, 180, 15)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
-
+    
     start = time.time()
     for i in range(len(lat_arr)):
         lap = time.time()
         print(f"Calculating latitude {lat_arr[i]} at time={lap-start}")
+        
+        sunsets = get_sunset_time(obs_date, np.full(len(long_arr),lat_arr[i]), long_arr)
+        #moonsets = get_moonset_times(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
+        
         for j in range(len(long_arr)):
-            q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j])
+            #q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j],sunset=sunsets[j],moonset=moonsets[j])
+            q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j],sunset=sunsets[j])
 
 
     print("Total time:", time.time()-start)
     cont_plot(lat_arr,long_arr, q_vals)
     print(f"Max q: {np.max(q_vals)}. Min q: {np.min(q_vals)}")
+
 
 
 def cont_plot(lat_arr,long_array,q_val):
@@ -223,12 +271,10 @@ def cont_plot(lat_arr,long_array,q_val):
     plt.yticks(fontsize=15)
     plt.ylim(-90,90)
     plt.xlim(-180,180)
-    #plt.legend()
-    plt.title(r'Global moon visibility')
+    plt.title(r'Global moon visibility at best time')
     #plt.xscale('log')
     #plt.yscale('log')
     plt.show()
-
 
 
 obs_date = Time("2023-09-15")
@@ -240,8 +286,11 @@ obs_date = Time("2023-09-16")
 obs_date = Time("2023-09-17")
 #plot_visibilty_at_date(obs_date)
 
-#Timing tests -----------------------------------------------
+obs_date = Time("2023-09-18")
+plot_visibilty_at_date(obs_date)
 
+#Timing tests -----------------------------------------------
+"""
 start = time.time()
 for i in range(10): #VERY SLOW - 2s/10
     coords=EarthLocation.from_geodetic(lat=random.randint(-50,50),lon=random.randint(-180,180))
@@ -259,13 +308,6 @@ for i in range(10):
         earth = get_body('earth',d,coords)
 print(time.time()-start)
 
-
-
-from skyfield import api
-
-ts = api.load.timescale()
-eph = api.load('de421.bsp')
-from skyfield import almanac
 
 start = time.time() #SLOW - 0.5s/10
 for i in range(10):
@@ -304,3 +346,4 @@ for i in range(10):
     get_times(d,lng=random.randint(-180,180),lat=random.randint(-50,50))["sunset"]
 
 print(time.time()-start)
+"""
