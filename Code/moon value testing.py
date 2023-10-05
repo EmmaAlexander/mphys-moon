@@ -13,9 +13,11 @@ import cartopy.crs as ccrs
 import time
 import random
 from suncalc import get_times
-#from datetime import timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from matplotlib.colors import LinearSegmentedColormap
 
-from astropy.time import Time, TimeDelta
+from astropy.time import Time, TimeDelta, TimezoneInfo
 from astropy.coordinates import Angle, EarthLocation, Longitude, Latitude
 from astropy.coordinates import get_body, AltAz, solar_system_ephemeris
 from astroplan import Observer
@@ -26,7 +28,10 @@ ts = api.load.timescale()
 eph = api.load('de421.bsp')
 from skyfield import almanac
 
-#CALCULATING MOON Q-TEST VALUES -----------------------------------------------
+from timezonefinder import TimezoneFinder
+ZoneFinder = TimezoneFinder()
+
+#CALCULATING MOON PARAMETERS -----------------------------------------------
 
 def get_geocentric_parallax(object_position,distance):
     #Gets geocentric parallax of object
@@ -39,8 +44,7 @@ def get_geocentric_parallax(object_position,distance):
 
 
 def get_q_value(alt_diff, width):
-    #Calculate q-test value
-    #q = (ARCV − (11·8371 − 6·3226 W' + 0·7319 W' 2 − 0·1018 W' 3 )) / 10
+    #Calculate q-test value using Yallop formula
 
     ARCV = alt_diff
     W = width.arcmin
@@ -49,24 +53,76 @@ def get_q_value(alt_diff, width):
     return q
 
 
-def get_sunset_time(obs_date, lat_arr,long_arr):
+def get_time_zone(latitude,longitude):
+    #Returns an astropy timedelta object with correct UTC offset
+    zone_name = ZoneFinder.timezone_at(lat=latitude,lng=longitude)
+    utc_offset = datetime.now(ZoneInfo(zone_name)).utcoffset().total_seconds()
+    #return TimezoneInfo(utc_offset=utc_offset*u.second)
+    return TimeDelta(utc_offset*u.second)
+
+def get_best_obs_time(sunset, moonset):
+    #Gets best time using Bruin's method
+
+    sunset = Time(sunset, scale='utc')
+    moonset = Time(moonset, scale='utc')
+
+    #Bruin best time Tb = (5 Ts +4 Tm)/ 9
+    best_time = (1/9)*(5*sunset.to_value("jd")+4*moonset.to_value("jd"))
+
+    return Time(best_time, format="jd")
+
+
+#CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
+
+def get_sunset_time(date_arr, lat_arr,long_arr):
     #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
-    #DOESN'T WORK FOR INDIVIDUAL VALUES ----------------------------------------
     #Gets array of sunset times
-    d = np.full(np.size(lat_arr),obs_date.to_datetime())
-    sunsets = get_times(d,lng=long_arr,lat=lat_arr)["sunset"]
+    #Date needs to be Time object
+    date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
+    sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
+
     return sunsets
+
+def get_sunset_time2(obs_date, lat,lon): #NOT IN USE
+    #Gets sunset using using skyfield (MEDIUM)
+
+    location = api.wgs84.latlon(lat,lon)
+
+    #time_zone = get_time_zone(lat, lon)
+
+    #obs_date = obs_date+time_zone
+
+    t0 = ts.from_astropy(obs_date)
+    t1 = ts.from_astropy(obs_date+TimeDelta(1,format="jd"))
+
+    f = almanac.sunrise_sunset(eph, location)
+    t, y = almanac.find_discrete(t0, t1, f)
+    return t[y==0].utc_iso()[0]
 
 
 def get_moonset_time(obs_date,lat, lon):
     #Gets moonset time using skyfield (MEDIUM)
     location = api.wgs84.latlon(lat,lon)
+
+    #time_zone = get_time_zone(lat, lon)
+
+    #obs_date = obs_date+time_zone
+
     t0 = ts.from_astropy(obs_date)
     t1 = ts.from_astropy(obs_date+TimeDelta(1,format="jd"))
 
     f = almanac.risings_and_settings(eph, eph['Moon'], location)
     t, y = almanac.find_discrete(t0, t1, f)
-    return t[y==0].utc_iso()[0]
+
+    moonsets = t[y==0]
+
+    if len(moonsets) == 0: #If no moonset found, add another day to search forward
+        t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
+        f = almanac.risings_and_settings(eph, eph['Moon'], location)
+        t, y = almanac.find_discrete(t0, t1, f)
+        moonsets = t[y==0]
+
+    return moonsets.utc_iso()[0]
 
 
 def get_sunset_moonset(d,coords,display=False): #NOT IN USE
@@ -87,18 +143,7 @@ def get_sunset_moonset(d,coords,display=False): #NOT IN USE
     return sunset, moonset
 
 
-def get_best_obs_time(sunset, moonset):
-    #Gets best time using Bruin's method
-
-    sunset = Time(sunset, scale='utc')
-    moonset = Time(moonset, scale='utc')
-
-    #Bruin best time Tb = (5 Ts +4 Tm)/ 9
-    best_time = (1/9)*(5*sunset.to_value("jd")+4*moonset.to_value("jd"))
-
-    return Time(best_time, format="jd")
-
-
+#CALCULATE Q-VALUE
 def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False):
     #This calculates the q-test value and other moon params
 
@@ -114,6 +159,7 @@ def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False)
     if not time_given:
         #Calculate sunset and moonset time if not given (SLOW)
         if sunset == 0:
+            #sunset = get_sunset_time2(d,lat,lon) - CHANGE ----------------------------
             sunset = get_sunset_time(d,lat,lon)
         if moonset == 0:
             moonset = get_moonset_time(d,lat,lon)
@@ -199,6 +245,65 @@ def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False)
 
     return q_dash
 
+def TEST_MOONSETS():
+    #Plots a visibility graph at a specified date
+    obs_date = Time("2023-03-22")
+
+    #lat/long over the globe
+    lat_arr = np.linspace(-55, 55, 15)
+    long_arr = np.linspace(-180, 180, 15)
+
+    start = time.time()
+    for i in range(len(lat_arr)):
+        lap = time.time()
+        print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
+        for j in range(len(long_arr)):
+            try:
+                offset = get_time_zone(lat_arr[i], long_arr[j])
+
+                moonset = Time(get_moonset_time(obs_date, lat_arr[i], long_arr[j]))
+                #adj_moonset = moonset + offset
+
+                sunset = Time(get_sunset_time2(obs_date, lat_arr[i], long_arr[j]))
+                #adj_sunset = sunset + offset
+                #print(f"Moonset: {adj_moonset.to_datetime()} local")
+                #print(f"Sunset: {adj_sunset.to_datetime()} local")
+
+                #print(f"Moonset: {moonset.to_datetime()} UTC")
+                #print(f"Sunset: {sunset.to_datetime()} UTC")
+            except IndexError:
+                print("Error at:",lat_arr[i], long_arr[j])
+
+    print(f"Total time: {round(time.time()-start,2)}s")
+
+#Current issues - suncalc gives previous sunsets sometimes
+#Skyfield moonset calc fails at -77
+
+def get_moonset_time2(obs_date,lat, lon): #TEST
+    #Gets moonset time using skyfield (MEDIUM)
+    location = api.wgs84.latlon(lat,lon)
+
+    time_zone = get_time_zone(lat, lon)
+
+    #obs_date = obs_date+time_zone
+
+    t0 = ts.from_astropy(obs_date-TimeDelta(1,format="jd"))
+    t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
+
+    f = almanac.risings_and_settings(eph, eph['Moon'], location)
+    t, y = almanac.find_discrete(t0, t1, f)
+    for i,date in enumerate(t):
+          print(y[i],date.to_astropy().to_datetime())
+
+    return t[y==0].utc_iso()[0]
+
+#print(get_time_zone(47.14285714285714, -77.14285714285714))
+#print(get_moonset_time(obs_date,47.14285714285714, -77.14285714285714))
+
+lat_arr = np.linspace(-60, 60, 15)
+long_arr = np.linspace(-180, 180, 15)
+obs_date = Time("2023-03-22")
+#print(get_sunset_time(obs_date, np.full(len(long_arr),lat_arr[12]), long_arr)[5])
 
 #PLOTTING MAP ----------------------------------------------------------------
 
@@ -215,18 +320,20 @@ def plot_visibilty_at_date(obs_date):
         lap = time.time()
         print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
 
-        sunsets = get_sunset_time(obs_date, np.full(len(long_arr),lat_arr[i]), long_arr)
+        full_lat_arr = np.full(len(long_arr),lat_arr[i])
+        #date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
+        sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
         #moonsets = get_moonset_time(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
 
         for j in range(len(long_arr)):
             #q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j],sunset=sunsets[j],moonset=moonsets[j])
-            q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j],sunset=sunsets[j])
+            q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j], sunset=sunsets[j])
+            #q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j])
 
 
     print(f"Total time: {round(time.time()-start,2)}s")
     cont_plot(obs_date, lat_arr,long_arr, q_vals)
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
-
 
 
 def cont_plot(obs_date,lat_arr,long_array,q_val):
@@ -236,24 +343,27 @@ def cont_plot(obs_date,lat_arr,long_array,q_val):
 
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines()
+    ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
     #ax.world()
+
+    #custom colormap created, red to green 6 bins
+    colors = [(1, 0, 0),(1,1,0), (0, 1, 0)]
+    custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
+
     cs = plt.contourf(x2, y2 , q_val, levels = [-0.293,-0.232, -0.160, -0.014, +0.216],
-                      alpha=0.3, cmap='brg' ,extend='both')
+                       alpha=0.6, cmap=custom_cmap ,extend='both')
+
+
     plt.colorbar(cs)
     nm, lbl = cs.legend_elements()
-    lbl_ = ['I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
-    plt.legend(nm, lbl_)
-    plt.xlabel(r'Latitude', fontsize=16)
-    plt.ylabel(r'Longitude', fontsize=16)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
+    lbl_ = ['I','I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
+    plt.legend(nm, lbl_, loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=len(lbl_))
+
     plt.ylim(-90,90)
     plt.xlim(-180,180)
 
     title_date = obs_date.to_datetime().date()
     plt.title(f"Global moon visibility at best time ({title_date})")
-    #plt.xscale('log')
-    #plt.yscale('log')
     plt.show()
 
 
@@ -279,7 +389,7 @@ obs_date = Time("2023-09-21")
 #plot_visibilty_at_date(obs_date)
 
 obs_date = Time("2023-03-22")
-#plot_visibilty_at_date(obs_date)
+plot_visibilty_at_date(obs_date)
 
 
 #TESTS ------------------------------------------------------------------------
