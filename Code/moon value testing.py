@@ -74,14 +74,27 @@ def get_best_obs_time(sunset, moonset):
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
 
-def get_sunset_time(date_arr, lat_arr,long_arr):
+def get_sunset_time(obs_date, lat_arr,long_arr):
     #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
     #Gets array of sunset times
     #Date needs to be Time object
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
+    
+    
+    next_day = obs_date+TimeDelta(1,format="jd")
 
+    # if np.size(lat_arr) > 1: #If working with array - REPLACE if possible
+    #     print(sunsets[0])
+    #     sunsets = np.array(sunsets,dtype='datetime64')
+    #     print([sunsets.day != obs_date.to_datetime().date()])
+    #     next_date_arr = np.full(np.size(lat_arr),next_day.to_datetime())
+    #     sunsets[sunsets.day != obs_date.to_datetime().day] = get_times(next_date_arr,lng=long_arr,lat=lat_arr)["sunset"]
+    # #else:
+    #    if sunsets.day != obs_date.to_datetime().day:
+    #        sunsets = get_times(next_day.to_datetime(),lng=long_arr,lat=lat_arr)["sunset"]
     return sunsets
+
 
 def get_sunset_time2(obs_date, lat,lon): #NOT IN USE
     #Gets sunset using using skyfield (MEDIUM)
@@ -245,13 +258,13 @@ def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False)
 
     return q_dash
 
-def TEST_MOONSETS():
+def RUN_SUN_MOONSETS_TEST():
     #Plots a visibility graph at a specified date
     obs_date = Time("2023-03-22")
 
     #lat/long over the globe
-    lat_arr = np.linspace(-55, 55, 15)
-    long_arr = np.linspace(-180, 180, 15)
+    lat_arr = np.linspace(-55, 55, 10)
+    long_arr = np.linspace(-180, 180, 10)
 
     start = time.time()
     for i in range(len(lat_arr)):
@@ -259,27 +272,28 @@ def TEST_MOONSETS():
         print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
         for j in range(len(long_arr)):
             try:
-                offset = get_time_zone(lat_arr[i], long_arr[j])
+                #offset = get_time_zone(lat_arr[i], long_arr[j])
 
-                moonset = Time(get_moonset_time(obs_date, lat_arr[i], long_arr[j]))
+                #moonset = Time(get_moonset_time(obs_date, lat_arr[i], long_arr[j]))
                 #adj_moonset = moonset + offset
 
-                sunset = Time(get_sunset_time2(obs_date, lat_arr[i], long_arr[j]))
+                sunset = Time(get_sunset_time(obs_date, lat_arr[i], long_arr[j]))
                 #adj_sunset = sunset + offset
                 #print(f"Moonset: {adj_moonset.to_datetime()} local")
                 #print(f"Sunset: {adj_sunset.to_datetime()} local")
 
                 #print(f"Moonset: {moonset.to_datetime()} UTC")
-                #print(f"Sunset: {sunset.to_datetime()} UTC")
+                print(f"Sunset: {sunset.to_datetime()} UTC")
             except IndexError:
                 print("Error at:",lat_arr[i], long_arr[j])
 
     print(f"Total time: {round(time.time()-start,2)}s")
+    
+#RUN_SUN_MOONSETS_TEST()
 
 #Current issues - suncalc gives previous sunsets sometimes
-#Skyfield moonset calc fails at -77
 
-def get_moonset_time2(obs_date,lat, lon): #TEST
+def get_moonset_time2(obs_date,lat, lon): #NOT IN USE
     #Gets moonset time using skyfield (MEDIUM)
     location = api.wgs84.latlon(lat,lon)
 
@@ -297,14 +311,6 @@ def get_moonset_time2(obs_date,lat, lon): #TEST
 
     return t[y==0].utc_iso()[0]
 
-#print(get_time_zone(47.14285714285714, -77.14285714285714))
-#print(get_moonset_time(obs_date,47.14285714285714, -77.14285714285714))
-
-lat_arr = np.linspace(-60, 60, 15)
-long_arr = np.linspace(-180, 180, 15)
-obs_date = Time("2023-03-22")
-#print(get_sunset_time(obs_date, np.full(len(long_arr),lat_arr[12]), long_arr)[5])
-
 #PLOTTING MAP ----------------------------------------------------------------
 
 def plot_visibilty_at_date(obs_date):
@@ -316,19 +322,21 @@ def plot_visibilty_at_date(obs_date):
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
-    for i in range(len(lat_arr)):
+    
+    for i, latitude in enumerate(lat_arr):
         lap = time.time()
         print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
 
-        full_lat_arr = np.full(len(long_arr),lat_arr[i])
+        full_lat_arr = np.full(len(long_arr),latitude)
+        
         #date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
         sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
+        
         #moonsets = get_moonset_time(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
 
-        for j in range(len(long_arr)):
-            #q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j],sunset=sunsets[j],moonset=moonsets[j])
-            q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j], sunset=sunsets[j])
-            #q_vals[i,j] = get_moon_params(obs_date, lat_arr[i], long_arr[j])
+        for j, longitude in enumerate(long_arr):
+            q_vals[j,i] = get_moon_params(obs_date, latitude, longitude, sunset=sunsets[j])
+
 
 
     print(f"Total time: {round(time.time()-start,2)}s")
@@ -338,8 +346,10 @@ def plot_visibilty_at_date(obs_date):
 
 def cont_plot(obs_date,lat_arr,long_array,q_val):
     #Plots moon visibility across a world map
-    x2, y2 = np.meshgrid(long_array,lat_arr,indexing='ij')
+    x, y = np.meshgrid(long_array,lat_arr,indexing='ij')
     plt.figure(figsize=(9,5))
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.family'] = 'STIXGeneral'
 
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines()
@@ -350,13 +360,12 @@ def cont_plot(obs_date,lat_arr,long_array,q_val):
     colors = [(1, 0, 0),(1,1,0), (0, 1, 0)]
     custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
 
-    cs = plt.contourf(x2, y2 , q_val, levels = [-0.293,-0.232, -0.160, -0.014, +0.216],
-                       alpha=0.6, cmap=custom_cmap ,extend='both')
-
+    cs = plt.contourf(x, y , q_val, levels = [-0.293,-0.232, -0.160, -0.014, +0.216],
+                       alpha=0.6, cmap=custom_cmap ,extend='max')
 
     plt.colorbar(cs)
     nm, lbl = cs.legend_elements()
-    lbl_ = ['I','I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
+    lbl_ = ['I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
     plt.legend(nm, lbl_, loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=len(lbl_))
 
     plt.ylim(-90,90)
@@ -366,27 +375,6 @@ def cont_plot(obs_date,lat_arr,long_array,q_val):
     plt.title(f"Global moon visibility at best time ({title_date})")
     plt.show()
 
-
-obs_date = Time("2023-09-15")
-#plot_visibilty_at_date(obs_date)
-
-obs_date = Time("2023-09-16")
-#plot_visibilty_at_date(obs_date)
-
-obs_date = Time("2023-09-17")
-#plot_visibilty_at_date(obs_date)
-
-obs_date = Time("2023-09-18")
-#plot_visibilty_at_date(obs_date)
-
-obs_date = Time("2023-09-19")
-#plot_visibilty_at_date(obs_date)
-
-obs_date = Time("2023-09-20")
-#plot_visibilty_at_date(obs_date)
-
-obs_date = Time("2023-09-21")
-#plot_visibilty_at_date(obs_date)
 
 obs_date = Time("2023-03-22")
 plot_visibilty_at_date(obs_date)
