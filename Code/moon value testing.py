@@ -17,7 +17,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from matplotlib.colors import LinearSegmentedColormap
 
-from astropy.time import Time, TimeDelta, TimezoneInfo
+from astropy.time import Time, TimeDelta
 from astropy.coordinates import Angle, EarthLocation, Longitude, Latitude
 from astropy.coordinates import get_body, AltAz, solar_system_ephemeris
 from astroplan import Observer
@@ -80,19 +80,18 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
     #Date needs to be Time object
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
-    
-    
+
     next_day = obs_date+TimeDelta(1,format="jd")
 
-    # if np.size(lat_arr) > 1: #If working with array - REPLACE if possible
-    #     print(sunsets[0])
-    #     sunsets = np.array(sunsets,dtype='datetime64')
-    #     print([sunsets.day != obs_date.to_datetime().date()])
-    #     next_date_arr = np.full(np.size(lat_arr),next_day.to_datetime())
-    #     sunsets[sunsets.day != obs_date.to_datetime().day] = get_times(next_date_arr,lng=long_arr,lat=lat_arr)["sunset"]
-    # #else:
-    #    if sunsets.day != obs_date.to_datetime().day:
-    #        sunsets = get_times(next_day.to_datetime(),lng=long_arr,lat=lat_arr)["sunset"]
+    if np.size(lat_arr) > 1: #If working with array - REPLACE if possible
+        sunsets = sunsets.to_numpy(dtype='datetime64[D]') #Convert series to array of datetime64 dates
+        incorrect_indexes = sunsets != obs_date.to_datetime().date() #Get positions of sunsets calculated for previous dates
+
+        next_date_arr = np.full(np.size(lat_arr),next_day.to_datetime())
+        sunsets[incorrect_indexes] = get_times(next_date_arr[incorrect_indexes],lng=long_arr[incorrect_indexes],lat=lat_arr[incorrect_indexes])["sunset"]
+    else:
+        if sunsets.day != obs_date.to_datetime().day:
+            sunsets = get_times(next_day.to_datetime(),lng=long_arr,lat=lat_arr)["sunset"]
     return sunsets
 
 
@@ -288,28 +287,8 @@ def RUN_SUN_MOONSETS_TEST():
                 print("Error at:",lat_arr[i], long_arr[j])
 
     print(f"Total time: {round(time.time()-start,2)}s")
-    
+
 #RUN_SUN_MOONSETS_TEST()
-
-#Current issues - suncalc gives previous sunsets sometimes
-
-def get_moonset_time2(obs_date,lat, lon): #NOT IN USE
-    #Gets moonset time using skyfield (MEDIUM)
-    location = api.wgs84.latlon(lat,lon)
-
-    time_zone = get_time_zone(lat, lon)
-
-    #obs_date = obs_date+time_zone
-
-    t0 = ts.from_astropy(obs_date-TimeDelta(1,format="jd"))
-    t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
-
-    f = almanac.risings_and_settings(eph, eph['Moon'], location)
-    t, y = almanac.find_discrete(t0, t1, f)
-    for i,date in enumerate(t):
-          print(y[i],date.to_astropy().to_datetime())
-
-    return t[y==0].utc_iso()[0]
 
 #PLOTTING MAP ----------------------------------------------------------------
 
@@ -322,21 +301,20 @@ def plot_visibilty_at_date(obs_date):
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
-    
+
     for i, latitude in enumerate(lat_arr):
         lap = time.time()
         print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
 
         full_lat_arr = np.full(len(long_arr),latitude)
-        
+
         #date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
         sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
-        
+
         #moonsets = get_moonset_time(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
 
         for j, longitude in enumerate(long_arr):
             q_vals[j,i] = get_moon_params(obs_date, latitude, longitude, sunset=sunsets[j])
-
 
 
     print(f"Total time: {round(time.time()-start,2)}s")
