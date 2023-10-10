@@ -5,7 +5,7 @@ Created on Thu Sep 28 11:52:00 2023
 @author: Neil Power & Ezzy Cross
 """
 
-#Standard mports
+#Standard imports
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -28,8 +28,15 @@ ts = api.load.timescale()
 eph = api.load('de421.bsp')
 from skyfield import almanac
 
-#Other imports
+#Cartopy imports
 import cartopy.crs as ccrs
+from cartopy import feature as cfeature
+
+#Geovista imports
+import geovista as gv
+import geovista.theme
+
+#Other imports
 from suncalc import get_times
 from astroplan import Observer
 from timezonefinder import TimezoneFinder
@@ -273,8 +280,8 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-70, 70, 15)
-    long_arr = np.linspace(-180, 180, 15)
+    lat_arr = np.linspace(-70, 70, 10)
+    long_arr = np.linspace(-180, 180, 10)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
@@ -287,20 +294,93 @@ def plot_visibilty_at_date(obs_date):
         #full_lat_arr = np.full(len(long_arr),latitude)
         #sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
         #moonsets = get_moonset_time(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
-        #print(sunsets)
         for j, longitude in enumerate(long_arr):
-            #print(sunsets[j])
             #q_vals[j,i] = get_moon_params(obs_date, latitude, longitude, sunset=sunsets[j])
             q_vals[j,i] = get_moon_params(obs_date, latitude, longitude)
 
 
     print(f"Total time: {round(time.time()-start,2)}s")
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
-    cont_plot(obs_date, lat_arr,long_arr, q_vals)
+    create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
+
+    create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
+
+    create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
+
+def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
+    #Plots moon visibility across a 3D globe
+    #conda install -c conda-forge geovista
+    
+    #from geovista.pantry import um_orca2
+    #sample = um_orca2()
+
+    #ERROR - Contours don't quite match with 2D plots - qval may be out of
+    #expected order?
+    x, y = np.meshgrid(long_arr,lat_arr,indexing='ij')
+    #mesh = gv.Transform.from_1d(long_arr, lat_arr, data=q_val)
+    mesh = gv.Transform.from_2d(x, y, data=q_val)
+    #Think this might need to be transform from 1D
+
+    colors = [(1, 0, 0),(1,1,0), (0, 1, 0)]
+    custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
+
+    plotter=gv.GeoPlotter()
+    #plotter = gv.GeoPlotter(crs="+proj=moll lon_0=-90")
+    #plotter = gv.GeoPlotter(crs="+proj=robin lon_0=-90")
+    sargs = {"title": "q-value"}
+
+    plotter.add_mesh(mesh, show_edges=True, cmap=custom_cmap, scalar_bar_args=sargs)
+    plotter.add_base_layer(texture=gv.natural_earth_1(),opacity=0.5)
+    #plotter.add_coastlines(resolution="10m",opacity=0.5)
+
+    plotter.view_xy()
+    plotter.add_axes()
+    plotter.export_obj('globe.obj') 
+    plotter.show()
+    
+    
 
 
+def create_globe_plot(obs_date,lat_arr,long_array,q_val):
+    #Plots moon visibility across a globe
 
-def cont_plot(obs_date,lat_arr,long_array,q_val):
+    #Set centre of globe
+    PLOT_CENTRE = [0,0]
+
+    x, y = np.meshgrid(long_array,lat_arr,indexing='ij')
+    plt.figure(figsize=(9,5))
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.family'] = 'STIXGeneral'
+
+    #ax = plt.axes(projection=ccrs.PlateCarree())
+    ax = plt.axes(projection=ccrs.Orthographic(*PLOT_CENTRE))
+    ax.add_feature(cfeature.OCEAN, zorder=0)
+    ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
+
+    ax.set_global()
+    ax.coastlines()
+    #ax.world()
+
+    crs = ccrs.PlateCarree()
+
+    #custom colormap created, red to green 6 bins
+    colors = [(1, 0, 0),(1,1,0), (0, 1, 0)]
+    custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
+
+    cs = plt.contourf(x, y , q_val, levels = [-0.293,-0.232, -0.160, -0.014, +0.216],
+                       alpha=0.6, cmap=custom_cmap ,extend='max',transform=crs)
+
+    plt.colorbar(cs)
+    nm = cs.legend_elements()[0]
+    lbl = ['I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
+    plt.legend(nm, lbl, loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=len(lbl))
+
+    title_date = obs_date.to_datetime().date()
+    plt.title(f"Global moon visibility at best time ({title_date})")
+    plt.show()
+
+
+def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     #Plots moon visibility across a world map
     x, y = np.meshgrid(long_array,lat_arr,indexing='ij')
     plt.figure(figsize=(9,5))
