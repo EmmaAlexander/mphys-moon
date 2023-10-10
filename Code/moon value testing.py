@@ -7,7 +7,6 @@ Created on Thu Sep 28 11:52:00 2023
 
 #Standard mports
 import time
-import random
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -62,7 +61,6 @@ def get_time_zone(latitude,longitude):
     #Returns an astropy timedelta object with correct UTC offset
     zone_name = ZoneFinder.timezone_at(lat=latitude,lng=longitude)
     utc_offset = datetime.now(ZoneInfo(zone_name)).utcoffset().total_seconds()
-    #print(datetime.now(ZoneInfo(zone_name)).utcoffset()/ TimeDelta(hours=1))
     return TimeDelta(utc_offset*u.second)
 
 def get_best_obs_time(sunset, moonset):
@@ -70,7 +68,7 @@ def get_best_obs_time(sunset, moonset):
 
     sunset = Time(sunset, scale='utc')
     moonset = Time(moonset, scale='utc')
-    
+
     #Note -  some slight discrepancy between T_S + 4/9 LAG and below method
     #lag = sunset.to_value("jd") - moonset.to_value("jd")
     #best_time = sunset + (4/9)*TimeDelta(lag, format="jd")
@@ -87,43 +85,9 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
     #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
     #Gets array of sunset times
     #Date needs to be Time object
-    #Returns datetime64 object
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
-
-    """
-    next_day = obs_date+TimeDelta(1,format="jd")
-
-    if np.size(lat_arr) > 1: #If working with array - REPLACE if possible
-        conv_sunsets = sunsets.to_numpy(dtype='datetime64[D]') #Convert series to array of datetime64 dates
-        sunsets = sunsets.to_numpy(dtype='datetime64') #Convert series to array of datetime64 dates/times
-
-        incorrect_indexes = conv_sunsets != obs_date.to_datetime().date() #Get positions of sunsets calculated for previous dates
-
-        next_date_arr = np.full(np.size(lat_arr),next_day.to_datetime())
-        replacements = get_times(next_date_arr[incorrect_indexes],lng=long_arr[incorrect_indexes],lat=lat_arr[incorrect_indexes])["sunset"]
-
-        sunsets[incorrect_indexes] = replacements
-
-    else:
-        if sunsets.day != obs_date.to_datetime().day:
-            sunsets = get_times(next_day.to_datetime(),lng=long_arr,lat=lat_arr)["sunset"]
-            
-    """
     return sunsets
-
-
-def get_sunset_time2(obs_date, lat,lon): #NOT IN USE
-    #Gets sunset using using skyfield (MEDIUM)
-
-    location = api.wgs84.latlon(lat,lon)
-
-    t0 = ts.from_astropy(obs_date)
-    t1 = ts.from_astropy(obs_date+TimeDelta(1,format="jd"))
-
-    f = almanac.sunrise_sunset(eph, location)
-    t, y = almanac.find_discrete(t0, t1, f)
-    return t[y==0].utc_iso()[0]
 
 
 def get_moonset_time(obs_date,lat, lon):
@@ -138,6 +102,7 @@ def get_moonset_time(obs_date,lat, lon):
 
     moonsets = t[y==0]
 
+    #MAY NO LONGER BE NEEDED?
     if len(moonsets) == 0: #If no moonset found, add another day to search forward
         t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
         f = almanac.risings_and_settings(eph, eph['Moon'], location)
@@ -167,25 +132,25 @@ def get_sunset_moonset(d,coords,display=False): #NOT IN USE
 def get_sun_moonset_date(d,lat,lon):
     #Gets UTC time to search for moon/sunset from location
     twelve_hours = TimeDelta(0.5,format="jd")
-    
+
     #Get time difference between UTC and local
     local_time_diff = get_time_zone(latitude=lat,longitude=lon)
     twelve_hours = TimeDelta(0.5,format="jd")
-    
+
     #If west of 0 deg longitude, search from DD-1/MM/YYYY 12:00 LOCAL
     if lon < 0:
         #Create object that is  DD-1/MM/YYYY 12:00 LOCAL
         local_midday_day_before = d - twelve_hours
-        
+
         #SUBTRACT time diff to go from local to UTC
         utc_search_time = local_midday_day_before - local_time_diff + TimeDelta(1,format="jd")
-    
-    
+
+
     #If east of 0 deg longitude, search from DD/MM/YYYY 00:00 UTC
     elif lon >= 0:
         #Create object that is  DD/MM/YYYY 12:00 LOCAL
         local_midday_day_of = d + twelve_hours
-        
+
         #SUBTRACT time diff to go from local to UTC
         utc_search_time = local_midday_day_of - local_time_diff
 
@@ -207,7 +172,7 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
     if not time_given:
         #Calculate sunset and moonset time if not given (SLOW)
         sun_moonset_date = get_sun_moonset_date(d,lat,lon)
-        
+
         if sunset is None:
             sunset = get_sunset_time(sun_moonset_date,lat,lon)
         if moonset is None:
@@ -215,14 +180,12 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
 
         #Other ways to calculate sun/moonset
         #sunset, moonset = get_sunset_moonset(sun_moonset_date, coords)
-        #moonset = get_moonset_time(d,lat,lon)
-        #sunset = get_sunset_time(d,lat,lon)
-        #sunset = get_sunset_time2(d,lat,lon)
+
         #print(f"MOONSET: {moonset}")
         #print(f"SUNSET: {sunset}")
         #LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
         #print(f"LAG: {LAG:.5} mins") #Lag time
-        
+
         best_obs_time = get_best_obs_time(sunset, moonset)
         d = best_obs_time
 
@@ -310,7 +273,7 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-55, 55, 15)
+    lat_arr = np.linspace(-70, 70, 15)
     long_arr = np.linspace(-180, 180, 15)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
@@ -334,7 +297,7 @@ def plot_visibilty_at_date(obs_date):
     print(f"Total time: {round(time.time()-start,2)}s")
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
     cont_plot(obs_date, lat_arr,long_arr, q_vals)
-    
+
 
 
 def cont_plot(obs_date,lat_arr,long_array,q_val):
@@ -391,137 +354,3 @@ plot_visibilty_at_date(date_to_plot)
 
 # date_to_plot = Time("2023-03-25")
 # plot_visibilty_at_date(date_to_plot)
-
-#TESTS ------------------------------------------------------------------------
-
-def RUN_QVALUE_TESTS():
-    #Example - first value of Yollop data (no 37), should produce ARCL=40.3, ARCV=31.1, DAZ=-26.1
-    #No time provided, usig best time which gives ARCL: 34.0, ARCV: 24.4, DAZ: 23.9
-    obs_date=Time("1870-7-25")
-    latitude = 38 #latitude in degrees
-    longitude = 23.7 #longitude in degrees
-
-    get_moon_params(obs_date, latitude, longitude, display=True)
-
-
-    #Example - first value of Odeh data (no 514), produces ARCV=0.7, ARCL=5.8, DAZ=5.7 as expected
-    obs_date=Time("2452318.180",format='jd')
-    latitude = 43.9 #latitude in degrees
-    longitude = 18.4 #longitude in degrees
-
-    get_moon_params(obs_date, latitude, longitude, time_given=True, display=True)
-
-    #Example - second value of Odeh data (no 565), also works
-    obs_date=Time("2452613.118",format='jd')
-    latitude = 30.9 #latitude in degrees
-    longitude = 35.8 #longitude in degrees
-
-    get_moon_params(obs_date, latitude, longitude, time_given=True, display=True)
-
-
-def RUN_LONDON_TEST():
-    obs_date=Time("2023-10-05")
-    latitude = 51.5072  #latitude in degrees
-    longitude = 0.1276 #longitude in degrees
-    coords=EarthLocation.from_geodetic(lon=longitude,lat=latitude)
-    sun,moon = get_sunset_moonset(obs_date,coords,display=True)
-
-    #Today's sunset - 18:29
-    print(sun.to_datetime(), moon.to_datetime())
-    print(get_sunset_time(obs_date, latitude, longitude))
-    print(get_moonset_time(obs_date, latitude, longitude))
-
-
-def RUN_TIMING_TESTS():
-    obs_date=Time("2023-10-05")
-    start = time.time()
-    for i in range(10): #VERY SLOW - 2s/10
-        coords=EarthLocation.from_geodetic(lat=random.randint(-50,50),lon=random.randint(-180,180))
-        get_best_obs_time(obs_date,coords)
-    print(time.time()-start)
-
-
-    start = time.time() #SLOW - 0.3s/10
-    for i in range(10):
-        d=obs_date
-        coords=EarthLocation.from_geodetic(lat=random.randint(-50,50),lon=random.randint(-180,180))
-        with solar_system_ephemeris.set('builtin'):
-            moon = get_body('moon',d,coords)
-            sun = get_body('sun',d,coords)
-            earth = get_body('earth',d,coords)
-    print(time.time()-start)
-
-
-    start = time.time() #SLOW - 0.5s/10
-    for i in range(10):
-        bluffton = api.wgs84.latlon(random.randint(-50,50),random.randint(-180,180))
-        t0 = ts.utc(2023,9,16)
-        t1 = ts.utc(2023,9,17)
-        t, y = almanac.find_discrete(t0, t1, almanac.sunrise_sunset(eph, bluffton))
-
-    print(time.time()-start)
-
-    start = time.time() #SLOW - 0.5s/10
-    for i in range(10):
-        bluffton = api.wgs84.latlon(random.randint(-50,50),random.randint(-180,180))
-        t0 = ts.utc(2023,9,16)
-        t1 = ts.utc(2023,9,17)
-        f = almanac.risings_and_settings(eph, eph['Moon'], bluffton)
-        t, y = almanac.find_discrete(t0, t1, f)
-
-    print(time.time()-start)
-
-
-    start = time.time()
-    lat_arr = np.linspace(-50, 50, 10)
-    long_arr = np.linspace(-180, 180, 10)
-    bluffton = api.wgs84.latlon(lat_arr,long_arr)
-
-    t0 = ts.utc(2023,9,16)
-    t1 = ts.utc(2023,9,17)
-    f = almanac.risings_and_settings(eph, eph['Moon'], bluffton)
-    t, y = almanac.find_discrete(t0, t1, f)
-    print(time.time()-start)
-
-    start = time.time() #FAST - 0.06/10 and array option
-    for i in range(10):
-        d=obs_date.to_datetime()
-        sunset = get_times(d,lng=random.randint(-180,180),lat=random.randint(-50,50))["sunset"]
-
-    print(time.time()-start)
-
-def RUN_SUN_MOONSETS_TEST():
-    #Plots a visibility graph at a specified date
-    obs_date = Time("2023-03-22")
-
-    #lat/long over the globe
-    lat_arr = np.linspace(-55, 55, 10)
-    long_arr = np.linspace(-180, 180, 10)
-
-    start = time.time()
-    for i in range(len(lat_arr)):
-        lap = time.time()
-        print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
-
-        #full_lat_arr = np.full(len(lat_arr),lat_arr[i])
-        #sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
-
-        for j in range(len(long_arr)):
-            try:
-                #offset = get_time_zone(lat_arr[i], long_arr[j])
-
-                moonset = Time(get_moonset_time(obs_date, lat_arr[i], long_arr[j]))
-                #adj_moonset = moonset + offset
-
-                sunset = Time(get_sunset_time(obs_date, lat_arr[i], long_arr[j]))
-                #adj_sunset = sunset + offset
-                #print(f"Moonset: {adj_moonset.to_datetime()} local")
-                #print(f"Sunset: {adj_sunset.to_datetime()} local")
-
-                print(f"Moonset: {moonset.to_datetime()} UTC")
-                print(f"Sunset: {sunset.to_datetime()} UTC")
-            except IndexError:
-                print("Error at:",lat_arr[i], long_arr[j])
-
-    print(f"Total time: {round(time.time()-start,2)}s")
-    
