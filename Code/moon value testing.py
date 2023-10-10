@@ -11,7 +11,7 @@ import random
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-#Untility imports
+#Utility imports
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -58,10 +58,11 @@ def get_q_value(alt_diff, width):
     return q
 
 
-def get_time_zone(latitude,longitude): #NOT IN USE
+def get_time_zone(latitude,longitude):
     #Returns an astropy timedelta object with correct UTC offset
     zone_name = ZoneFinder.timezone_at(lat=latitude,lng=longitude)
     utc_offset = datetime.now(ZoneInfo(zone_name)).utcoffset().total_seconds()
+    #print(datetime.now(ZoneInfo(zone_name)).utcoffset()/ TimeDelta(hours=1))
     return TimeDelta(utc_offset*u.second)
 
 def get_best_obs_time(sunset, moonset):
@@ -69,11 +70,15 @@ def get_best_obs_time(sunset, moonset):
 
     sunset = Time(sunset, scale='utc')
     moonset = Time(moonset, scale='utc')
+    
+    #Note -  some slight discrepancy between T_S + 4/9 LAG and below method
+    #lag = sunset.to_value("jd") - moonset.to_value("jd")
+    #best_time = sunset + (4/9)*TimeDelta(lag, format="jd")
+    #return best_time
 
     #Bruin best time Tb = (5 Ts +4 Tm)/ 9
     best_time = (1/9)*(5*sunset.to_value("jd")+4*moonset.to_value("jd"))
-
-    return Time(best_time, format="jd")
+    return Time(best_time, format="jd", scale='utc')
 
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
@@ -86,7 +91,7 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
 
-
+    """
     next_day = obs_date+TimeDelta(1,format="jd")
 
     if np.size(lat_arr) > 1: #If working with array - REPLACE if possible
@@ -103,6 +108,8 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
     else:
         if sunsets.day != obs_date.to_datetime().day:
             sunsets = get_times(next_day.to_datetime(),lng=long_arr,lat=lat_arr)["sunset"]
+            
+    """
     return sunsets
 
 
@@ -110,10 +117,6 @@ def get_sunset_time2(obs_date, lat,lon): #NOT IN USE
     #Gets sunset using using skyfield (MEDIUM)
 
     location = api.wgs84.latlon(lat,lon)
-
-    #time_zone = get_time_zone(lat, lon)
-
-    #obs_date = obs_date+time_zone
 
     t0 = ts.from_astropy(obs_date)
     t1 = ts.from_astropy(obs_date+TimeDelta(1,format="jd"))
@@ -161,9 +164,36 @@ def get_sunset_moonset(d,coords,display=False): #NOT IN USE
 
     return sunset, moonset
 
+def get_sun_moonset_date(d,lat,lon):
+    #Gets UTC time to search for moon/sunset from location
+    twelve_hours = TimeDelta(0.5,format="jd")
+    
+    #Get time difference between UTC and local
+    local_time_diff = get_time_zone(latitude=lat,longitude=lon)
+    twelve_hours = TimeDelta(0.5,format="jd")
+    
+    #If west of 0 deg longitude, search from DD-1/MM/YYYY 12:00 LOCAL
+    if lon < 0:
+        #Create object that is  DD-1/MM/YYYY 12:00 LOCAL
+        local_midday_day_before = d - twelve_hours
+        
+        #SUBTRACT time diff to go from local to UTC
+        utc_search_time = local_midday_day_before - local_time_diff + TimeDelta(1,format="jd")
+    
+    
+    #If east of 0 deg longitude, search from DD/MM/YYYY 00:00 UTC
+    elif lon >= 0:
+        #Create object that is  DD/MM/YYYY 12:00 LOCAL
+        local_midday_day_of = d + twelve_hours
+        
+        #SUBTRACT time diff to go from local to UTC
+        utc_search_time = local_midday_day_of - local_time_diff
+
+    return utc_search_time
+
 
 #CALCULATE Q-VALUE
-def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False):
+def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=False):
     #This calculates the q-test value and other moon params
 
     #Create coordinates object
@@ -173,22 +203,27 @@ def get_moon_params(d,lat,lon,sunset=0,moonset=0,time_given=False,display=False)
     longitude = Longitude(lon*u.deg,wrap_angle=180*u.deg)
     coords=EarthLocation.from_geodetic(lon=longitude,lat=latitude)
 
-
     #Calculate best observation time if no time given
     if not time_given:
         #Calculate sunset and moonset time if not given (SLOW)
-        if sunset == 0:
-            sunset = get_sunset_time(d,lat,lon)
-        if moonset == 0:
-            moonset = get_moonset_time(d,lat,lon)
+        sun_moonset_date = get_sun_moonset_date(d,lat,lon)
+        
+        if sunset is None:
+            sunset = get_sunset_time(sun_moonset_date,lat,lon)
+        if moonset is None:
+            moonset = get_moonset_time(sun_moonset_date,lat,lon)
 
         #Other ways to calculate sun/moonset
-        #sunset,moonset = get_sunset_moonset(d, coords)
+        #sunset, moonset = get_sunset_moonset(sun_moonset_date, coords)
         #moonset = get_moonset_time(d,lat,lon)
         #sunset = get_sunset_time(d,lat,lon)
         #sunset = get_sunset_time2(d,lat,lon)
+        #print(f"MOONSET: {moonset}")
+        #print(f"SUNSET: {sunset}")
+        #LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
+        #print(f"LAG: {LAG:.5} mins") #Lag time
         
-        best_obs_time = get_best_obs_time(sunset,moonset)
+        best_obs_time = get_best_obs_time(sunset, moonset)
         d = best_obs_time
 
     #Get positions of Moon and Sun
@@ -275,7 +310,7 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-60, 60, 15)
+    lat_arr = np.linspace(-55, 55, 15)
     long_arr = np.linspace(-180, 180, 15)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
@@ -283,19 +318,23 @@ def plot_visibilty_at_date(obs_date):
 
     for i, latitude in enumerate(lat_arr):
         lap = time.time()
-        print(f"Calculating latitude {lat_arr[i]} at time={round(lap-start,2)}s")
+        print(f"Calculating latitude {round(lat_arr[i],2)} at time={round(lap-start,2)}s")
 
-        full_lat_arr = np.full(len(long_arr),latitude)
-        sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
+        #TEMP REMOVED ARRAY SUNSET FINDING
+        #full_lat_arr = np.full(len(long_arr),latitude)
+        #sunsets = get_sunset_time(obs_date, full_lat_arr, long_arr)
         #moonsets = get_moonset_time(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
-
+        #print(sunsets)
         for j, longitude in enumerate(long_arr):
-            q_vals[j,i] = get_moon_params(obs_date, latitude, longitude, sunset=sunsets[j])
+            #print(sunsets[j])
+            #q_vals[j,i] = get_moon_params(obs_date, latitude, longitude, sunset=sunsets[j])
+            q_vals[j,i] = get_moon_params(obs_date, latitude, longitude)
 
 
     print(f"Total time: {round(time.time()-start,2)}s")
-    cont_plot(obs_date, lat_arr,long_arr, q_vals)
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
+    cont_plot(obs_date, lat_arr,long_arr, q_vals)
+    
 
 
 def cont_plot(obs_date,lat_arr,long_array,q_val):
@@ -318,11 +357,11 @@ def cont_plot(obs_date,lat_arr,long_array,q_val):
                        alpha=0.6, cmap=custom_cmap ,extend='max')
 
     #cs = plt.contourf(x, y , q_val,alpha=0.6, cmap=custom_cmap ,extend='max')
-    
+
     plt.colorbar(cs)
-    nm, lbl = cs.legend_elements()
-    lbl_ = ['I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
-    plt.legend(nm, lbl_, loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=len(lbl_))
+    nm = cs.legend_elements()[0]
+    lbl = ['I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
+    plt.legend(nm, lbl, loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=len(lbl))
 
     plt.ylim(-90,90)
     plt.xlim(-180,180)
@@ -332,9 +371,26 @@ def cont_plot(obs_date,lat_arr,long_array,q_val):
     plt.show()
 
 
-obs_date = Time("2023-03-22")
-plot_visibilty_at_date(obs_date)
+date_to_plot = Time("2023-03-22")
+plot_visibilty_at_date(date_to_plot)
 
+# date_to_plot = Time("2023-03-20")
+# plot_visibilty_at_date(date_to_plot)
+
+# date_to_plot = Time("2023-03-21")
+# plot_visibilty_at_date(date_to_plot)
+
+# date_to_plot = Time("2023-03-22")
+# plot_visibilty_at_date(date_to_plot)
+
+# date_to_plot = Time("2023-03-23")
+# plot_visibilty_at_date(date_to_plot)
+
+# date_to_plot = Time("2023-03-24")
+# plot_visibilty_at_date(date_to_plot)
+
+# date_to_plot = Time("2023-03-25")
+# plot_visibilty_at_date(date_to_plot)
 
 #TESTS ------------------------------------------------------------------------
 
@@ -377,6 +433,7 @@ def RUN_LONDON_TEST():
 
 
 def RUN_TIMING_TESTS():
+    obs_date=Time("2023-10-05")
     start = time.time()
     for i in range(10): #VERY SLOW - 2s/10
         coords=EarthLocation.from_geodetic(lat=random.randint(-50,50),lon=random.randint(-180,180))
@@ -429,10 +486,10 @@ def RUN_TIMING_TESTS():
     start = time.time() #FAST - 0.06/10 and array option
     for i in range(10):
         d=obs_date.to_datetime()
-        get_times(d,lng=random.randint(-180,180),lat=random.randint(-50,50))["sunset"]
+        sunset = get_times(d,lng=random.randint(-180,180),lat=random.randint(-50,50))["sunset"]
 
     print(time.time()-start)
-    
+
 def RUN_SUN_MOONSETS_TEST():
     #Plots a visibility graph at a specified date
     obs_date = Time("2023-03-22")
@@ -467,3 +524,4 @@ def RUN_SUN_MOONSETS_TEST():
                 print("Error at:",lat_arr[i], long_arr[j])
 
     print(f"Total time: {round(time.time()-start,2)}s")
+    
