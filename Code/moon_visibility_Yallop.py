@@ -169,6 +169,22 @@ def get_sun_moonset_date(d,lat,lon):
 
     return utc_search_time
 
+def get_new_moon_date(obs_date):
+    #Gets date of last new moon
+    one_month_ago = obs_date - TimeDelta(30,format="jd")
+    t0 = ts.from_astropy(one_month_ago)
+    t1 = ts.from_astropy(obs_date)
+    t, y = almanac.find_discrete(t0, t1, almanac.moon_phases(eph))
+
+    new_moon = t[y==0][-1] #Get most recent new moon
+    new_moon_date = new_moon.utc_datetime().replace(hour=0, minute=0,second=0)
+    return Time(new_moon_date)
+
+def get_moon_age(obs_date):
+    #Gets age of moon as a number of days
+    last_new_moon = get_new_moon_date(obs_date)
+    moon_age = obs_date-last_new_moon
+    return moon_age.jd
 
 #CALCULATE Q-VALUE
 def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=False):
@@ -250,6 +266,9 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
         #Calculate q-test value
         q = get_q_value(ARCV, W)
 
+        #Get moon age
+        MOON_AGE = get_moon_age(d)
+
         #Cosine test: cos ARCL = cos ARCV cos DAZ
         cos_test = np.abs(np.cos(ARCL.radian)-np.cos(ARCV.radian)*np.cos(DAZ.radian))
 
@@ -257,6 +276,7 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
         print(f"BEST OBS TIME: {best_obs_time.to_datetime().hour}:{best_obs_time.to_datetime().minute}")
         print(f"DATE: {d.to_value('datetime')}")
         print(f"JULIAN DATE: {d.to_value('jd')}")
+        print(f"MOON AGE: {round(MOON_AGE,3)}")
 
         print(f"MOON ALT: {moon_altaz.alt:.4}. AZ: {moon_altaz.az:.4}")
         print(f"SUN ALT: {sun_altaz.alt:.4}. AZ: {sun_altaz.az:.4}")
@@ -481,8 +501,14 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.show()
 
 
-#date_to_plot = Time("2023-03-22")
-#plot_visibilty_at_date(date_to_plot)
+# date_to_plot = Time("2023-03-22")
+# plot_visibilty_at_date(date_to_plot)
+
+# date_to_plot = Time("2023-10-16")
+# plot_visibilty_at_date(date_to_plot)
 
 date_to_plot = Time("2023-10-16")
+plot_visibilty_at_date(date_to_plot)
+
+date_to_plot = Time("2023-10-17")
 plot_visibilty_at_date(date_to_plot)
