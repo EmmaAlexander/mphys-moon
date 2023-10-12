@@ -34,7 +34,6 @@ from cartopy import feature as cfeature
 
 #Geovista imports
 import geovista as gv
-import geovista.theme
 
 #Other imports
 from suncalc import get_times
@@ -280,8 +279,8 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-70, 70, 10)
-    long_arr = np.linspace(-180, 180, 10)
+    lat_arr = np.linspace(-70, 70, 15)
+    long_arr = np.linspace(-180, 180, 15)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
@@ -301,44 +300,62 @@ def plot_visibilty_at_date(obs_date):
 
     print(f"Total time: {round(time.time()-start,2)}s")
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
-    create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
+    #create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
 
-    create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
+    #create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
 
     create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
 
 def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
     #Plots moon visibility across a 3D globe
     #conda install -c conda-forge geovista
-    
-    #from geovista.pantry import um_orca2
-    #sample = um_orca2()
 
-    #ERROR - Contours don't quite match with 2D plots - qval may be out of
-    #expected order?
     x, y = np.meshgrid(long_arr,lat_arr,indexing='ij')
-    #mesh = gv.Transform.from_1d(long_arr, lat_arr, data=q_val)
-    mesh = gv.Transform.from_2d(x, y, data=q_val)
-    #Think this might need to be transform from 1D
+    mesh = gv.Transform.from_2d(x, y, data=q_val,radius=1.0)
 
     colors = [(1, 0, 0),(1,1,0), (0, 1, 0)]
     custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
 
     plotter=gv.GeoPlotter()
-    #plotter = gv.GeoPlotter(crs="+proj=moll lon_0=-90")
-    #plotter = gv.GeoPlotter(crs="+proj=robin lon_0=-90")
-    sargs = {"title": "q-value"}
 
-    plotter.add_mesh(mesh, show_edges=True, cmap=custom_cmap, scalar_bar_args=sargs)
+    #Issues - Yallop annotations not plotting
+    #Basemap is appearing over mesh
+
+    #Create colourmap
+    yallop_annotations = {
+    1: 'I(I)',
+    2: 'I(V)',
+    3: 'V(F)',
+    4: 'V(V)',
+    5: 'V',
+    6: 'X'}
+
+    sargs = dict(title="q-value",
+                 interactive=True,
+                 n_labels=6,
+                 italic=True,
+                 font_family="times",
+                 title_font_size=22,
+                 label_font_size=22)
+
+    plotter.add_mesh(mesh, show_edges=False,
+                     annotations = yallop_annotations,
+                     clim=[-0.293,+0.216],
+                     cmap=custom_cmap,
+                     scalar_bar_args=sargs,
+                     below_color= [1.0, 0.0, 0.0, 1.0],
+                     above_color= [0.0, 1.0, 0.0, 1.0],
+                     opacity=1)
+
     plotter.add_base_layer(texture=gv.natural_earth_1(),opacity=0.5)
-    #plotter.add_coastlines(resolution="10m",opacity=0.5)
+    #plotter.add_coastlines(resolution="10m",opacity=1)
 
     plotter.view_xy()
     plotter.add_axes()
-    plotter.export_obj('globe.obj') 
+    title_date = obs_date.to_datetime().date()
+    plotter.add_title(f"Global moon visibility at best time ({title_date})",font="arial",font_size=12)
+    plotter.export_obj(f"Globes\\{title_date} {len(long_arr)}x{len(long_arr)}.obj")
     plotter.show()
-    
-    
 
 
 def create_globe_plot(obs_date,lat_arr,long_array,q_val):
@@ -354,6 +371,7 @@ def create_globe_plot(obs_date,lat_arr,long_array,q_val):
 
     #ax = plt.axes(projection=ccrs.PlateCarree())
     ax = plt.axes(projection=ccrs.Orthographic(*PLOT_CENTRE))
+
     ax.add_feature(cfeature.OCEAN, zorder=0)
     ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
 
@@ -377,6 +395,47 @@ def create_globe_plot(obs_date,lat_arr,long_array,q_val):
 
     title_date = obs_date.to_datetime().date()
     plt.title(f"Global moon visibility at best time ({title_date})")
+    plt.show()
+
+def create_globe_plot_set(obs_date,lat_arr,long_array,q_val):
+    #Plots moon visibility across a globe at four views
+
+    #Array of centers
+    PLOT_CENTRE_ARR = [[0,0],[90,0],[180,0],[-90,0]]
+
+    x, y = np.meshgrid(long_array,lat_arr,indexing='ij')
+    fig = plt.figure(layout='constrained', figsize=(10, 8))
+
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.family'] = 'STIXGeneral'
+
+    colors = [(1, 0, 0),(1,1,0), (0, 1, 0)]
+    custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
+
+    for i in range(len(PLOT_CENTRE_ARR)):
+        ax = fig.add_subplot(2,2,i+1,projection=ccrs.Orthographic(*PLOT_CENTRE_ARR[i]))
+
+        ax.add_feature(cfeature.OCEAN, zorder=0)
+        ax.add_feature(cfeature.LAND, zorder=0, edgecolor='black')
+        ax.set_global()
+        crs = ccrs.PlateCarree()
+
+        # plot discontinuity line between 180,-90 to 180,90
+        ax.plot([180, -90], [180, 90], linestyle='dashed',transform=crs,
+                linewidth=5) #doesnt work
+
+        cs = ax.contourf(x, y , q_val, levels = [-0.293,-0.232, -0.160, -0.014, +0.216],
+                      alpha=0.6, cmap=custom_cmap ,extend='max',transform=crs)
+
+
+    fig.colorbar(cs, ax=fig.axes, shrink=0.9)
+    nm = cs.legend_elements()[0]
+    lbl = ['I(I)', 'I(V)', 'V(F)', 'V(V)', 'V']
+    fig.legend(nm, lbl, loc='upper center', bbox_to_anchor=(0.5, -0.05)
+               , ncol=len(lbl), fontsize=17)
+
+    title_date = obs_date.to_datetime().date()
+    plt.suptitle(f"Global moon visibility at best time ({title_date})", fontsize=25)
     plt.show()
 
 
@@ -415,22 +474,7 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
 
 
 date_to_plot = Time("2023-03-22")
+#plot_visibilty_at_date(date_to_plot)
+
+#date_to_plot = Time("2023-08-14")
 plot_visibilty_at_date(date_to_plot)
-
-# date_to_plot = Time("2023-03-20")
-# plot_visibilty_at_date(date_to_plot)
-
-# date_to_plot = Time("2023-03-21")
-# plot_visibilty_at_date(date_to_plot)
-
-# date_to_plot = Time("2023-03-22")
-# plot_visibilty_at_date(date_to_plot)
-
-# date_to_plot = Time("2023-03-23")
-# plot_visibilty_at_date(date_to_plot)
-
-# date_to_plot = Time("2023-03-24")
-# plot_visibilty_at_date(date_to_plot)
-
-# date_to_plot = Time("2023-03-25")
-# plot_visibilty_at_date(date_to_plot)
