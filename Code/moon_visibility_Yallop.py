@@ -115,7 +115,14 @@ def get_moonset_time(obs_date,lat, lon):
         t, y = almanac.find_discrete(t0, t1, f)
         moonsets = t[y==0]
 
-    return moonsets.utc_iso()[0]
+    try:
+        moonset = moonsets.utc_iso()[0]
+
+    except:
+        print(f"Error calculating moonset for Longitude: {lon} Latitude: {lat}.")
+        moonset = obs_date
+
+    return moonset
 
 
 def get_sunset_moonset(d,coords,display=False): #NOT IN USE
@@ -279,7 +286,7 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-70, 70, 15)
+    lat_arr = np.linspace(-60, 60, 15)
     long_arr = np.linspace(-180, 180, 15)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
@@ -300,9 +307,11 @@ def plot_visibilty_at_date(obs_date):
 
     print(f"Total time: {round(time.time()-start,2)}s")
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
-    #create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
+    create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
 
-    #create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
+    create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
+
+    create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
 
     create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
 
@@ -354,7 +363,7 @@ def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
     plotter.add_axes()
     title_date = obs_date.to_datetime().date()
     plotter.add_title(f"Global moon visibility at best time ({title_date})",font="arial",font_size=12)
-    plotter.export_obj(f"Globes\\{title_date} {len(long_arr)}x{len(long_arr)}.obj")
+    #plotter.export_obj(f"Globes\\{title_date} {len(long_arr)}x{len(long_arr)}.obj")
     plotter.show()
 
 
@@ -369,7 +378,6 @@ def create_globe_plot(obs_date,lat_arr,long_array,q_val):
     plt.rcParams['mathtext.fontset'] = 'stix'
     plt.rcParams['font.family'] = 'STIXGeneral'
 
-    #ax = plt.axes(projection=ccrs.PlateCarree())
     ax = plt.axes(projection=ccrs.Orthographic(*PLOT_CENTRE))
 
     ax.add_feature(cfeature.OCEAN, zorder=0)
@@ -473,8 +481,8 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.show()
 
 
-date_to_plot = Time("2023-03-22")
+#date_to_plot = Time("2023-03-22")
 #plot_visibilty_at_date(date_to_plot)
 
-#date_to_plot = Time("2023-08-14")
+date_to_plot = Time("2023-10-16")
 plot_visibilty_at_date(date_to_plot)
