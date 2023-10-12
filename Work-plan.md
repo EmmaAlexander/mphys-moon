@@ -46,7 +46,7 @@ b. Evaluation of ways to present first visibility maps to allow for greatest acc
 
 Use these to get an initial introduction to the project, and as a starting point for your literature review. 
 
-* [Webpages of RH van Gent](https://webspace.science.uu.nl/~gent0113/islam/islam_lunvis.htm)
+* [Webpages of RH van Gent](https://webspace.science.uu.nl/~gent0113/islam/islam_lunvis.htm), particually [this extensive list](https://webspace.science.uu.nl/~gent0113/islam/islam_lunvis_references.htm) of existing literature. 
 * [Yallop 1997 “A method for predicting the first sighting of the new Crescent Moon”](https://www.astronomycenter.net/pdf/yallop_1997.pdf)
 * [Hoffman 2003 “Observing the new Moon”](https://academic.oup.com/mnras/article/340/3/1039/1746574)
 * [Hafez et al 2014 “A radio determination of the time of the New Moon”](https://academic.oup.com/mnras/article/439/3/2271/1084163)
