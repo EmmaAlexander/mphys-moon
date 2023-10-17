@@ -28,6 +28,7 @@ from skyfield import almanac
 
 #Other imports
 from suncalc import get_times
+from astroplan import Observer
 from timezonefinder import TimezoneFinder
 ZoneFinder = TimezoneFinder()
 
@@ -79,6 +80,16 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
     return sunsets
+
+def get_sunset_time2(d,lat,lon):
+    #Gets sunset and moonset using astroplan (VERY SLOW)
+    coords=EarthLocation.from_geodetic(lon=lon,lat=lat)
+    
+    obs = Observer(location=coords, timezone="UTC")
+
+    #moonset=obs.moon_set_time(time=d,which='next',n_grid_points=150)
+    sunset=obs.sun_set_time(time=d,which='next',n_grid_points=150)
+    return sunset
 
 
 def get_moonset_time(obs_date,lat, lon):
@@ -165,9 +176,10 @@ def get_moon_params(d,lat,lon):
     coords=EarthLocation.from_geodetic(lon=longitude,lat=latitude)
 
 
-    #Calculate sunset and moonset time if not given (SLOW)
+    #Calculate sunset and moonset time
     sun_moonset_date = get_sun_moonset_date(d,lat,lon)
-    sunset = get_sunset_time(sun_moonset_date,lat,lon)
+    #sunset = get_sunset_time(sun_moonset_date,lat,lon) #Use suncalc
+    sunset = get_sunset_time2(sun_moonset_date,lat,lon) #Use astroplan
     moonset = get_moonset_time(sun_moonset_date,lat,lon)
 
     best_obs_time = get_best_obs_time(sunset, moonset)
@@ -225,39 +237,6 @@ def get_moon_params(d,lat,lon):
     MOON_AGE = get_moon_age(d)
     LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
 
-    #Cosine test: cos ARCL = cos ARCV cos DAZ
-    # cos_test = np.abs(np.cos(ARCL.radian)-np.cos(ARCV.radian)*np.cos(DAZ.radian))
-
-    # print(f"OBS LAT: {lat}. LON: {lon}")
-    # print(f"OBS TIME: {d.to_datetime().hour}:{d.to_datetime().minute}")
-    # print(f"BEST OBS TIME: {best_obs_time.to_datetime().hour}:{best_obs_time.to_datetime().minute}")
-    # print(f"DATE: {d.to_value('datetime')}")
-    # print(f"JULIAN DATE: {d.to_value('jd')}")
-    # print(f"MOON AGE: {round(MOON_AGE,3)}")
-    # print(f"MOONSET: {moonset}")
-    # print(f"SUNSET: {sunset}")
-
-    # print(f"LAG: {LAG:.5} mins") #Lag time
-
-    # print(f"MOON ALT: {moon_altaz.alt:.4}. AZ: {moon_altaz.az:.4}")
-    # print(f"SUN ALT: {sun_altaz.alt:.4}. AZ: {sun_altaz.az:.4}")
-    # print(f"EARTH-MOON DIST: {MOON_EARTH_DIST:.2}")
-    # print(f"SUN-MOON DIST: {DIST:.2}")
-
-    # print(f"ARCL: {ARCL:.3}")
-    # print(f"ARCV: {ARCV:.3}")
-    # print(f"DAZ: {DAZ:.3}")
-    # print(f"PARALLAX: {parallax.arcmin:.3} arcmin")
-
-    # print(f"h: {h:.3}")
-    # print(f"W: {W.arcmin:.4} arcmin")
-    # print(f"W': {W_dash.arcmin:.4} arcmin")
-    # print(f"q(W): {q:.6}")
-    # print(f"q(W'): {q_dash:.6}")
-
-    # print(f"COS TEST: {cos_test:.4}")
-
-    # print()
 
     return np.round([d.to_value('jd'),
             lat,
@@ -282,16 +261,17 @@ def get_moon_params(d,lat,lon):
             q_dash],decimals=5)
 
 def cloud_replace(cloud_text):
-    if cloud_text == "Clear":
+    cloud_text = cloud_text.lower()
+    if cloud_text == "clear":
         return 0
-    elif cloud_text == "Rainy":
+    elif cloud_text == "rainy":
         return 0.5
-    elif cloud_text == "Partly_Cloudy":
+    elif cloud_text == "partly_cloudy":
         return 0.5
-    elif cloud_text == "Totally_Cloudy":
+    elif cloud_text == "totally_cloudy":
         return 1
     else:
-        print("err")
+        print(f"Error with {cloud_text}")
         return -1
 
 def read_and_update_file(file_name):
@@ -322,7 +302,9 @@ def read_and_update_file(file_name):
 
 
     num_of_rows = raw_data.shape[0]
+ 
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
     for i, row in raw_data.iterrows():
         row_date = Time(datetime.strptime(row["Date"], "%d-%b-%y"))
         row_lat = float(row["Lat"])
@@ -340,6 +322,7 @@ def read_and_update_file(file_name):
             print(f"Generating row {i}")
 
     data.to_csv('..\\Data\\icouk_sighting_data_with_params.csv')
+
 
 data_file = '..\\Data\\icouk_sighting_data.csv'
 read_and_update_file(data_file)
