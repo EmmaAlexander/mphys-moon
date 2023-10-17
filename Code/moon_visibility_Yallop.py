@@ -197,25 +197,22 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
     longitude = Longitude(lon*u.deg,wrap_angle=180*u.deg)
     coords=EarthLocation.from_geodetic(lon=longitude,lat=latitude)
 
+    
+    
+    #Calculate sunset and moonset time if not given (SLOW)
+    sun_moonset_date = get_sun_moonset_date(d,lat,lon)
+    if sunset is None:
+        sunset = get_sunset_time(sun_moonset_date,lat,lon)
+    if moonset is None:
+        moonset = get_moonset_time(sun_moonset_date,lat,lon)
+
+    #Other ways to calculate sun/moonset
+    #sunset, moonset = get_sunset_moonset(sun_moonset_date, coords)
+
+        
+    best_obs_time = get_best_obs_time(sunset, moonset)
     #Calculate best observation time if no time given
     if not time_given:
-        #Calculate sunset and moonset time if not given (SLOW)
-        sun_moonset_date = get_sun_moonset_date(d,lat,lon)
-
-        if sunset is None:
-            sunset = get_sunset_time(sun_moonset_date,lat,lon)
-        if moonset is None:
-            moonset = get_moonset_time(sun_moonset_date,lat,lon)
-
-        #Other ways to calculate sun/moonset
-        #sunset, moonset = get_sunset_moonset(sun_moonset_date, coords)
-
-        #print(f"MOONSET: {moonset}")
-        #print(f"SUNSET: {sunset}")
-        #LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
-        #print(f"LAG: {LAG:.5} mins") #Lag time
-
-        best_obs_time = get_best_obs_time(sunset, moonset)
         d = best_obs_time
 
     #Get positions of Moon and Sun
@@ -268,15 +265,21 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
 
         #Get moon age
         MOON_AGE = get_moon_age(d)
+        LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
 
         #Cosine test: cos ARCL = cos ARCV cos DAZ
         cos_test = np.abs(np.cos(ARCL.radian)-np.cos(ARCV.radian)*np.cos(DAZ.radian))
 
         print(f"OBS LAT: {lat}. LON: {lon}")
+        print(f"OBS TIME: {d.to_datetime().hour}:{d.to_datetime().minute}")
         print(f"BEST OBS TIME: {best_obs_time.to_datetime().hour}:{best_obs_time.to_datetime().minute}")
         print(f"DATE: {d.to_value('datetime')}")
         print(f"JULIAN DATE: {d.to_value('jd')}")
         print(f"MOON AGE: {round(MOON_AGE,3)}")
+        print(f"MOONSET: {moonset}")
+        print(f"SUNSET: {sunset}")
+        
+        print(f"LAG: {LAG:.5} mins") #Lag time
 
         print(f"MOON ALT: {moon_altaz.alt:.4}. AZ: {moon_altaz.az:.4}")
         print(f"SUN ALT: {sun_altaz.alt:.4}. AZ: {sun_altaz.az:.4}")
@@ -508,7 +511,20 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
 # plot_visibilty_at_date(date_to_plot)
 
 date_to_plot = Time("2023-10-16")
-plot_visibilty_at_date(date_to_plot)
+#plot_visibilty_at_date(date_to_plot)
 
 date_to_plot = Time("2023-10-17")
-plot_visibilty_at_date(date_to_plot)
+#plot_visibilty_at_date(date_to_plot)
+
+date_to_check = Time("2023-10-16 16:47")
+lat = 54.0449
+lon = -2.7993
+get_moon_params(date_to_check,lat,lon,time_given=True,display=True)
+
+lat = 51.5
+lon = 0.13
+date_to_check = Time("2023-10-16 16:47")
+sunset = get_sunset_time(date_to_check,lat,lon)
+moonset = get_moonset_time(date_to_check,lat,lon)   
+best_obs_time = get_best_obs_time(sunset, moonset)
+print(f"BEST OBS TIME: {best_obs_time.to_datetime().hour}:{best_obs_time.to_datetime().minute}")
