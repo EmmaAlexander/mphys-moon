@@ -431,7 +431,7 @@
 1443,2,07-Sep-21,Not_seen,Naked-eye,Clear,"London, Greater London (UK)",51.50853,-0.12574
 1443,2,07-Sep-21,Not_seen,Naked-eye,Partly_Cloudy,"Nottingham, Nottinghamshire (UK)",52.9536,-1.15047
 1443,2,07-Sep-21,Not_seen,Naked-eye,Clear,"Nuneaton, Warwickshire (UK)",52.52323,-1.46523
-1443,2,07-Sep-21,Not_seen,Naked-eye,Clear,"Saltburn-by-the-sea, Teeside (UK)",54.5828,0.9732
+1443,2,07-Sep-21,Not_seen,Naked-eye,Clear,"Saltburn-by-the-sea, Teeside (UK)",54.5828,-0.9732
 1443,2,07-Sep-21,Not_seen,Naked-eye,Partly_Cloudy,"Southampton, Hampshire (UK)",50.90395,-1.40428
 1443,2,07-Sep-21,Not_seen,Naked-eye,Totally_Cloudy,"Tonteg, Wales (UK)",51.5679,-3.308
 1443,2,07-Sep-21,Not_seen,Naked-eye_and/or_Binoculars,Clear,"York, North Yorkshire (UK)",53.95763,-1.08271
@@ -463,7 +463,7 @@
 1443,3,07-Oct-21,Not_seen,Naked-eye,Partly_Cloudy,"High Wycombe, Buckinghamshire (UK)",51.62907,-0.74934
 1443,3,07-Oct-21,Not_seen,Naked-eye,Partly_Cloudy,"Leeds, West Yorkshire (UK)",53.79648,-1.54785
 1443,3,07-Oct-21,Not_seen,Naked-eye,Totally_Cloudy,"London, Greater London (UK)",51.50853,-0.12574
-1443,3,07-Oct-21,Not_seen,Naked-eye_and/or_Binoculars,Totally_Cloudy,"Marske, Teeside (UK)",54.591,1.019
+1443,3,07-Oct-21,Not_seen,Naked-eye_and/or_Binoculars,Totally_Cloudy,"Marske, Teeside (UK)",54.591,-1.019
 1443,3,07-Oct-21,Not_seen,Naked-eye,Totally_Cloudy,"Middlesbrough, Teesside (UK)",54.5767,-1.2355
 1443,3,07-Oct-21,Not_seen,Naked-eye,Partly_Cloudy,"Nuneaton, Warwickshire (UK)",52.52323,-1.46523
 1443,3,07-Oct-21,Not_seen,Naked-eye_and/or_Binoculars,Totally_Cloudy,"Redcar, Teeside (UK)",54.618,-1.069
@@ -538,7 +538,7 @@
 1443,10,01-May-22,Not_seen,Naked-eye,Totally_Cloudy,"Nuneaton, Warwickshire (UK)",52.52323,-1.46523
 1443,10,01-May-22,Not_seen,Naked-eye,Totally_Cloudy,"Preston, Lancashire (UK)",53.76282,-2.70452
 1443,10,01-May-22,Not_seen,Naked-eye,Partly_Cloudy,"Richmond-upon-Thames, Surrey (UK)",51.46879,-0.31285
-1443,10,01-May-22,Not_seen,Naked-eye,Totally_Cloudy,"Saltburn-by-the-sea, Teeside (UK)",54.5828,0.9732
+1443,10,01-May-22,Not_seen,Naked-eye,Totally_Cloudy,"Saltburn-by-the-sea, Teeside (UK)",54.5828,-0.9732
 1443,10,01-May-22,Not_seen,Naked-eye,Totally_Cloudy,"Southampton, Hampshire (UK)",50.90395,-1.40428
 1443,10,01-May-22,Not_seen,Naked-eye_and/or_Binoculars,Totally_Cloudy,"Swansea, Wales (UK)",51.62079,-3.94323
 1443,10,01-May-22,Not_seen,Naked-eye_and/or_Binoculars,Totally_Cloudy,"York, North Yorkshire (UK)",53.95763,-1.08271
@@ -620,7 +620,7 @@
 1445,2,17-Aug-23,Not_seen,Naked-eye,Partly_cloudy,"Nuneaton, Warwickshire (UK)",52.52323,-1.46523
 1445,2,17-Aug-23,Not_seen,Naked-eye,Partly_cloudy,"Portsmouth, Hampshire (UK)",50.79899,-1.09125
 1445,2,17-Aug-23,Not_seen,Naked-eye,Totally_cloudy,"Redcar, Teeside (UK)",54.618,-1.069
-1445,2,17-Aug-23,Not_seen,Naked-eye,Totally_cloudy,"Saltburn-by-the-sea, Teeside (UK)",54.5828,0.9732
+1445,2,17-Aug-23,Not_seen,Naked-eye,Totally_cloudy,"Saltburn-by-the-sea, Teeside (UK)",54.5828,-0.9732
 1445,2,17-Aug-23,Not_seen,Naked-eye,Partly_cloudy,"Surbiton, Greater London (UK)",51.39148,-0.29825
 1445,2,17-Aug-23,Not_seen,Binoculars_or_Naked-eye,Partly_cloudy,"Whitehaven, Cumbria (UK)",54.548,-3.5855
 1445,2,17-Aug-23,Not_seen,Naked-eye,Partly_cloudy,"Woking, Surrey (UK)",51.320278, -0.556667
