@@ -309,8 +309,8 @@ def plot_visibilty_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-60, 60, 15)
-    long_arr = np.linspace(-180, 180, 15)
+    lat_arr = np.linspace(-60, 60, 20)
+    long_arr = np.linspace(-180, 180, 20)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
@@ -330,11 +330,11 @@ def plot_visibilty_at_date(obs_date):
 
     print(f"Total time: {round(time.time()-start,2)}s")
     print(f"Max q: {round(np.max(q_vals),3)}. Min q: {round(np.min(q_vals),3)}")
-    create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
+    #create_contour_plot(obs_date, lat_arr,long_arr, q_vals)
 
-    create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
+    #create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
 
-    create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
+    #create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
 
     create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
 
@@ -349,9 +349,6 @@ def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
     custom_cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=6)
 
     plotter=gv.GeoPlotter()
-
-    #Issues - Yallop annotations not plotting
-    #Basemap is appearing over mesh
 
     #Create colourmap
     yallop_annotations = {
@@ -507,10 +504,10 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
 
 
 date_to_plot = Time("2023-10-15")
-plot_visibilty_at_date(date_to_plot)
+#plot_visibilty_at_date(date_to_plot)
 
 date_to_plot = Time("2023-10-16")
-#plot_visibilty_at_date(date_to_plot)
+plot_visibilty_at_date(date_to_plot)
 
 
 date_to_plot = Time("2023-10-17")

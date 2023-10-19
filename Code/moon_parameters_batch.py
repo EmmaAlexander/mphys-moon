@@ -23,7 +23,7 @@ from astropy.constants import R_earth
 #Skyfield imports
 from skyfield import api
 ts = api.load.timescale()
-eph = api.load('de421.bsp')
+eph = api.load('de430_1850-2150.bsp')
 from skyfield import almanac
 
 #Other imports
@@ -268,15 +268,15 @@ def cloud_replace(cloud_text):
         return 0.5
     elif cloud_text == "partly_cloudy":
         return 0.5
+    elif cloud_text == "partly cloudy":
+        return 0.75
     elif cloud_text == "totally_cloudy":
         return 1
     else:
         print(f"Error with {cloud_text}")
         return -1
 
-def read_and_update_file(file_name):
-    raw_data = pd.read_csv(file_name)
-    cols = ["Date",
+cols = ["Date",
             "Latitude",
             "Longitude",
             "Moon Age",
@@ -300,7 +300,10 @@ def read_and_update_file(file_name):
             "Cloud Level",
             "Seen"]
 
-
+def read_and_update_file_ICOUK():
+    data_file = '..\\Data\\icouk_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+    
     num_of_rows = raw_data.shape[0]
  
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
@@ -322,10 +325,139 @@ def read_and_update_file(file_name):
             print(f"Generating row {i}")
 
     data.to_csv('..\\Data\\icouk_sighting_data_with_params.csv')
+    
+def select_seen(row_seene,row_seenb,row_seent):
+    if row_seene:
+        return "Seen"
+    elif row_seenb:
+        return "Seen"
+    elif row_seent:
+        return "Seen"
+    else:
+        return "Not_seen"
 
+    
+def read_and_update_file_ICOP():
+    data_file = '..\\Data\\icop_ahmed_2020_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+    
+    num_of_rows = raw_data.shape[0]
+ 
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
+    for i, row in raw_data.iterrows():
+        row_date = Time(datetime.strptime(row["Date"], "%d/%m/%Y"))
+        row_lat = float(row["lat"])
+        row_lon = float(row["long"])
+        row_seene = row["y_eye"] 
+        row_seenb = row["y_bino"]
+        row_seent = row["y_tele"]
+        row_seen = select_seen(row_seene,row_seenb,row_seent)
+        row_cloud = cloud_replace(row["x_sky"])
 
-data_file = '..\\Data\\icouk_sighting_data.csv'
-read_and_update_file(data_file)
+        existing_data = [row_cloud, row_seen]
+        new_data = get_moon_params(row_date,row_lat,row_lon)
+
+        row_to_add = np.hstack((new_data,existing_data))
+        data.loc[i] = row_to_add
+        
+        #if i ==100:
+        #    break
+
+        if i % 100 == 0:
+            print(f"Generating row {i}")
+
+    data.to_csv('..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv')
+    
+def select_means(means):
+    means = means.strip()
+    if means == "N":
+        return "Seen"
+    elif means == "T":
+        return "Seen"
+    else:
+        return "Not_seen"
+    
+def read_and_update_file_alrefay():
+    data_file = '..\\Data\\alrefay_2018_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+    
+    num_of_rows = raw_data.shape[0]
+ 
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
+    for i, row in raw_data.iterrows():
+        row_date = Time(datetime.strptime(row["Date"], " %Y/%m/%d"))
+        row_lat = float(row["Lat."])
+        row_lon = float(row["Long."])
+        means = row["Means"]
+        row_seen = select_means(means)
+        row_cloud = 0
+
+        existing_data = [row_cloud, row_seen]
+        new_data = get_moon_params(row_date,row_lat,row_lon)
+
+        row_to_add = np.hstack((new_data,existing_data))
+        data.loc[i] = row_to_add
+        
+        #if i ==100:
+        #    break
+
+        if i % 100 == 0:
+            print(f"Generating row {i}")
+
+    data.to_csv('..\\Data\\alrefay_2018_sighting_data_with_params.csv')
+    
+def select_vis(vis):
+    vis = vis.strip()
+    if vis == "V":
+        return "Seen"
+    elif vis == "P":
+        return "Seen"
+    else:
+        return "Not_seen"
+
+def read_and_update_file_allawi():
+    data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+    
+    num_of_rows = raw_data.shape[0]
+ 
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
+    for i, row in raw_data.iterrows():
+        date_text = row["Sight Date Best Time"].strip()[0:10]
+        if date_text[2] == "-":
+            row_date = Time(datetime.strptime(date_text, "%d-%m-%Y"))
+        else:
+            row_date = Time(datetime.strptime(date_text, "%Y-%m-%d"))
+        row_lat = float(row["Lat"])
+        row_lon = float(row["Lon"])
+        visibility = row["ANN Vis"]
+        row_seen = select_vis(visibility)
+        row_cloud = 0
+
+        existing_data = [row_cloud, row_seen]
+        new_data = get_moon_params(row_date,row_lat,row_lon)
+
+        row_to_add = np.hstack((new_data,existing_data))
+        data.loc[i] = row_to_add
+        
+        #if i ==100:
+        #    break
+
+        if i % 100 == 0:
+            print(f"Generating row {i}")
+
+    data.to_csv('..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
+
+#read_and_update_file_ICOUK()
+
+#read_and_update_file_ICOP()
+
+#read_and_update_file_alrefray()
+
+read_and_update_file_allawi()
 
 
 
