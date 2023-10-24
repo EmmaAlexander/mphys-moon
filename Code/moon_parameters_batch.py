@@ -298,7 +298,25 @@ cols = ["Date",
             "q",
             "q'",
             "Cloud Level",
-            "Seen"]
+            "Seen",
+            "Method"]
+
+def select_method_ICOUK(row_seen,raw_method):
+    if row_seen == "Not_seen":
+        return row_seen
+    elif raw_method == "Naked-eye":
+        return "Seen_eye"
+    elif raw_method == "Binoculars":
+        return "Seen_binoculars"
+    elif raw_method == "Naked-eye_and/or_Binoculars":
+        return "Seen_eye"
+    elif raw_method == "Binoculars_and_Naked-eye":
+        return "Seen_eye"
+    elif raw_method == "Naked-eye_and_Binoculars":
+        return "Seen_eye"
+    else:
+        print(f"Error with {raw_method}")
+        return -1
 
 def read_and_update_file_ICOUK():
     data_file = '..\\Data\\icouk_sighting_data.csv'
@@ -313,9 +331,11 @@ def read_and_update_file_ICOUK():
         row_lat = float(row["Lat"])
         row_lon = float(row["Lon"])
         row_seen = row["Seen?"]
+        raw_method = row["Method"]
+        row_method = select_method_ICOUK(row_seen,raw_method)
         row_cloud = cloud_replace(row["Clouds"])
 
-        existing_data = [row_cloud, row_seen]
+        existing_data = [row_cloud, row_seen, row_method]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -326,13 +346,25 @@ def read_and_update_file_ICOUK():
 
     data.to_csv('..\\Data\\icouk_sighting_data_with_params.csv')
     
-def select_seen(row_seene,row_seenb,row_seent):
+def select_seen_ICOP(row_seene,row_seenb,row_seent):
     if row_seene:
         return "Seen"
     elif row_seenb:
         return "Seen"
     elif row_seent:
         return "Seen"
+    else:
+        return "Not_seen"
+    
+def select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc):
+    if row_seene:
+        return "Seen_eye"
+    elif row_seenb:
+        return "Seen_binoculars"
+    elif row_seent:
+        return "Seen_telescope"
+    elif row_seenc:
+        return "Seen_ccd"
     else:
         return "Not_seen"
 
@@ -352,10 +384,12 @@ def read_and_update_file_ICOP():
         row_seene = row["y_eye"] 
         row_seenb = row["y_bino"]
         row_seent = row["y_tele"]
-        row_seen = select_seen(row_seene,row_seenb,row_seent)
+        row_seenc = row["y_ccd"]
+        row_seen = select_seen_ICOP(row_seene,row_seenb,row_seent)
+        row_method = select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc)
         row_cloud = cloud_replace(row["x_sky"])
 
-        existing_data = [row_cloud, row_seen]
+        existing_data = [row_cloud, row_seen, row_method]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -369,7 +403,7 @@ def read_and_update_file_ICOP():
 
     data.to_csv('..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv')
     
-def select_means(means):
+def select_means_alrefay(means):
     means = means.strip()
     if means == "N":
         return "Seen"
@@ -377,6 +411,19 @@ def select_means(means):
         return "Seen"
     else:
         return "Not_seen"
+    
+    
+def select_method_alrefay(means):
+    means = means.strip()
+    if means == "N":
+        return "Seen_eye"
+    elif means == "T":
+        return "Seen_telescope"
+    elif means == "Not_seen":
+        return "Not_seen"
+    else:
+        print(f"Error with {means}")
+        return -1
     
 def read_and_update_file_alrefay():
     data_file = '..\\Data\\alrefay_2018_sighting_data.csv'
@@ -391,10 +438,11 @@ def read_and_update_file_alrefay():
         row_lat = float(row["Lat."])
         row_lon = float(row["Long."])
         means = row["Means"]
-        row_seen = select_means(means)
+        row_seen = select_means_alrefay(means)
+        row_method = select_method_alrefay(means)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen]
+        existing_data = [row_cloud, row_seen, row_method]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -408,14 +456,41 @@ def read_and_update_file_alrefay():
 
     data.to_csv('..\\Data\\alrefay_2018_sighting_data_with_params.csv')
     
-def select_vis(vis):
+def select_vis_allawi(vis):
     vis = vis.strip()
-    if vis == "V":
+    if vis == "I":
+        return "Not_seen"
+    elif vis == "I(B)":
         return "Seen"
-    elif vis == "P":
+    elif vis == "I(T)":
+        return "Seen"
+    elif vis == "I(V)":
+        return "Seen"
+    elif vis == "V(F)":
+        return "Seen"
+    elif vis == "V":
         return "Seen"
     else:
+        print(f"Error with {vis}")
+        return -1
+    
+def select_method_allawi(vis):
+    vis = vis.strip()
+    if vis == "I":
         return "Not_seen"
+    elif vis == "I(B)":
+        return "Seen_binoculars"
+    elif vis == "I(T)":
+        return "Seen_telescope"
+    elif vis == "I(V)":
+        return "Seen_binoculars"
+    elif vis == "V(F)":
+        return "Seen_eye"
+    elif vis == "V":
+        return "Seen_eye"
+    else:
+        print(f"Error with {vis}")
+        return -1
 
 def read_and_update_file_allawi():
     data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data.csv'
@@ -433,18 +508,16 @@ def read_and_update_file_allawi():
             row_date = Time(datetime.strptime(date_text, "%Y-%m-%d"))
         row_lat = float(row["Lat"])
         row_lon = float(row["Lon"])
-        visibility = row["ANN Vis"]
-        row_seen = select_vis(visibility)
+        visibility = row["SO"]
+        row_seen = select_vis_allawi(visibility)
+        row_method = select_method_allawi(visibility)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen]
+        existing_data = [row_cloud, row_seen, row_method]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
-        
-        #if i ==100:
-        #    break
 
         if i % 100 == 0:
             print(f"Generating row {i}")
@@ -455,7 +528,7 @@ def read_and_update_file_allawi():
 
 #read_and_update_file_ICOP()
 
-#read_and_update_file_alrefray()
+#read_and_update_file_alrefay()
 
 read_and_update_file_allawi()
 
