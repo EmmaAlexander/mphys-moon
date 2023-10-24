@@ -84,7 +84,7 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
 def get_sunset_time2(d,lat,lon):
     #Gets sunset and moonset using astroplan (VERY SLOW)
     coords=EarthLocation.from_geodetic(lon=lon,lat=lat)
-    
+
     obs = Observer(location=coords, timezone="UTC")
 
     #moonset=obs.moon_set_time(time=d,which='next',n_grid_points=150)
@@ -212,6 +212,9 @@ def get_moon_params(d,lat,lon):
     #Calculate moon altitude
     h = moon_altaz.alt
 
+    #Calculate illumination
+    ILLUMINATION = 0.5*(1 - np.cos(ARCL.radian))
+
     #Calculate moon semi-diameter
     SD = 0.27245*parallax
 
@@ -238,6 +241,7 @@ def get_moon_params(d,lat,lon):
     LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
 
 
+
     return np.round([d.to_value('jd'),
             lat,
             lon,
@@ -254,6 +258,7 @@ def get_moon_params(d,lat,lon):
             ARCL.deg,
             ARCV.deg,
             DAZ.deg,
+            ILLUMINATION,
             parallax.arcmin,
             W.arcmin,
             W_dash.arcmin,
@@ -275,7 +280,7 @@ def cloud_replace(cloud_text):
     else:
         print(f"Error with {cloud_text}")
         return -1
-    
+
 def select_method_array(method):
     methods = []
     if method == "Not_seen":
@@ -289,7 +294,20 @@ def select_method_array(method):
     elif method == "Seen_eye":
         methods = ["Seen_eye", "Seen_binoculars", "Seen_telescope", "Seen_ccd"]
     return ";".join(methods)
-        
+
+def select_visibility_number(method):
+    if method == "Not_seen":
+        vis = 0
+    elif method == "Seen_ccd":
+        vis = 0.25
+    elif method == "Seen_telescope":
+        vis = 0.5
+    elif method == "Seen_binoculars":
+        vis = 0.75
+    elif method == "Seen_eye":
+        vis = 1
+    return vis
+
 
 cols = ["Date",
             "Latitude",
@@ -307,6 +325,7 @@ cols = ["Date",
             "ARCL",
             "ARCV",
             "DAZ",
+            "Illumination",
             "Parallax",
             "W",
             "W'",
@@ -315,7 +334,8 @@ cols = ["Date",
             "Cloud Level",
             "Seen",
             "Method",
-            "Methods"]
+            "Methods",
+            "Visibility"]
 
 def select_method_ICOUK(row_seen,raw_method):
     if row_seen == "Not_seen":
@@ -337,9 +357,9 @@ def select_method_ICOUK(row_seen,raw_method):
 def read_and_update_file_ICOUK():
     data_file = '..\\Data\\icouk_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
-    
+
     num_of_rows = raw_data.shape[0]
- 
+
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
     data.index.name="Index"
     for i, row in raw_data.iterrows():
@@ -350,9 +370,10 @@ def read_and_update_file_ICOUK():
         raw_method = row["Method"]
         row_method = select_method_ICOUK(row_seen,raw_method)
         row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
         row_cloud = cloud_replace(row["Clouds"])
-        
-        existing_data = [row_cloud, row_seen, row_method, row_methods]
+
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -362,7 +383,7 @@ def read_and_update_file_ICOUK():
             print(f"Generating row {i}")
 
     data.to_csv('..\\Data\\icouk_sighting_data_with_params.csv')
-    
+
 def select_seen_ICOP(row_seene,row_seenb,row_seent):
     if row_seene:
         return "Seen"
@@ -372,7 +393,7 @@ def select_seen_ICOP(row_seene,row_seenb,row_seent):
         return "Seen"
     else:
         return "Not_seen"
-    
+
 def select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc):
     if row_seene:
         return "Seen_eye"
@@ -385,34 +406,35 @@ def select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc):
     else:
         return "Not_seen"
 
-    
+
 def read_and_update_file_ICOP():
     data_file = '..\\Data\\icop_ahmed_2020_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
-    
+
     num_of_rows = raw_data.shape[0]
- 
+
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
     data.index.name="Index"
     for i, row in raw_data.iterrows():
         row_date = Time(datetime.strptime(row["Date"], "%d/%m/%Y"))
         row_lat = float(row["lat"])
         row_lon = float(row["long"])
-        row_seene = row["y_eye"] 
+        row_seene = row["y_eye"]
         row_seenb = row["y_bino"]
         row_seent = row["y_tele"]
         row_seenc = row["y_ccd"]
         row_seen = select_seen_ICOP(row_seene,row_seenb,row_seent)
         row_method = select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc)
         row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
         row_cloud = cloud_replace(row["x_sky"])
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods]
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
-        
+
         #if i ==100:
         #    break
 
@@ -420,7 +442,7 @@ def read_and_update_file_ICOP():
             print(f"Generating row {i}")
 
     data.to_csv('..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv')
-    
+
 def select_means_alrefay(means):
     means = means.strip()
     if means == "N":
@@ -429,8 +451,8 @@ def select_means_alrefay(means):
         return "Seen"
     else:
         return "Not_seen"
-    
-    
+
+
 def select_method_alrefay(means):
     means = means.strip()
     if means == "N":
@@ -442,13 +464,13 @@ def select_method_alrefay(means):
     else:
         print(f"Error with {means}")
         return -1
-    
+
 def read_and_update_file_alrefay():
     data_file = '..\\Data\\alrefay_2018_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
-    
+
     num_of_rows = raw_data.shape[0]
- 
+
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
     data.index.name="Index"
     for i, row in raw_data.iterrows():
@@ -459,14 +481,15 @@ def read_and_update_file_alrefay():
         row_seen = select_means_alrefay(means)
         row_method = select_method_alrefay(means)
         row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods]
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
-        
+
         #if i ==100:
         #    break
 
@@ -474,7 +497,7 @@ def read_and_update_file_alrefay():
             print(f"Generating row {i}")
 
     data.to_csv('..\\Data\\alrefay_2018_sighting_data_with_params.csv')
-    
+
 def select_vis_allawi(vis):
     vis = vis.strip()
     if vis == "I":
@@ -492,7 +515,7 @@ def select_vis_allawi(vis):
     else:
         print(f"Error with {vis}")
         return -1
-    
+
 def select_method_allawi(vis):
     vis = vis.strip()
     if vis == "I":
@@ -510,14 +533,14 @@ def select_method_allawi(vis):
     else:
         print(f"Error with {vis}")
         return -1
-    
+
 
 def read_and_update_file_allawi():
     data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
-    
+
     num_of_rows = raw_data.shape[0]
- 
+
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
     data.index.name="Index"
     for i, row in raw_data.iterrows():
@@ -532,9 +555,10 @@ def read_and_update_file_allawi():
         row_seen = select_vis_allawi(visibility)
         row_method = select_method_allawi(visibility)
         row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods]
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -545,13 +569,13 @@ def read_and_update_file_allawi():
 
     data.to_csv('..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 
-#read_and_update_file_ICOUK()
+read_and_update_file_ICOUK()
 
 read_and_update_file_ICOP()
 
-#read_and_update_file_alrefay()
+read_and_update_file_alrefay()
 
-#read_and_update_file_allawi()
+read_and_update_file_allawi()
 
 
 

@@ -267,6 +267,9 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
         MOON_AGE = get_moon_age(d)
         LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
 
+        #Calculate illumination
+        ILLUMINATION = 0.5*(1 - np.cos(ARCL.radian))
+
         #Cosine test: cos ARCL = cos ARCV cos DAZ
         cos_test = np.abs(np.cos(ARCL.radian)-np.cos(ARCV.radian)*np.cos(DAZ.radian))
 
@@ -290,6 +293,7 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
         print(f"ARCV: {ARCV:.3}")
         print(f"DAZ: {DAZ:.3}")
         print(f"PARALLAX: {parallax.arcmin:.3} arcmin")
+        print(f"ILLUMINATION: {ILLUMINATION:.3}")
 
         print(f"h: {h:.3}")
         print(f"W: {W.arcmin:.4} arcmin")
