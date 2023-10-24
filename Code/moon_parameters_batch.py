@@ -275,6 +275,21 @@ def cloud_replace(cloud_text):
     else:
         print(f"Error with {cloud_text}")
         return -1
+    
+def select_method_array(method):
+    methods = []
+    if method == "Not_seen":
+        methods = ["Not_seen"]
+    elif method == "Seen_ccd":
+        methods = ["Seen_ccd"]
+    elif method == "Seen_telescope":
+        methods = ["Seen_telescope", "Seen_ccd"]
+    elif method == "Seen_binoculars":
+        methods = ["Seen_binoculars", "Seen_telescope", "Seen_ccd"]
+    elif method == "Seen_eye":
+        methods = ["Seen_eye", "Seen_binoculars", "Seen_telescope", "Seen_ccd"]
+    return ";".join(methods)
+        
 
 cols = ["Date",
             "Latitude",
@@ -299,7 +314,8 @@ cols = ["Date",
             "q'",
             "Cloud Level",
             "Seen",
-            "Method"]
+            "Method",
+            "Methods"]
 
 def select_method_ICOUK(row_seen,raw_method):
     if row_seen == "Not_seen":
@@ -333,9 +349,10 @@ def read_and_update_file_ICOUK():
         row_seen = row["Seen?"]
         raw_method = row["Method"]
         row_method = select_method_ICOUK(row_seen,raw_method)
+        row_methods = select_method_array(row_method)
         row_cloud = cloud_replace(row["Clouds"])
-
-        existing_data = [row_cloud, row_seen, row_method]
+        
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -387,9 +404,10 @@ def read_and_update_file_ICOP():
         row_seenc = row["y_ccd"]
         row_seen = select_seen_ICOP(row_seene,row_seenb,row_seent)
         row_method = select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc)
+        row_methods = select_method_array(row_method)
         row_cloud = cloud_replace(row["x_sky"])
 
-        existing_data = [row_cloud, row_seen, row_method]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -440,9 +458,10 @@ def read_and_update_file_alrefay():
         means = row["Means"]
         row_seen = select_means_alrefay(means)
         row_method = select_method_alrefay(means)
+        row_methods = select_method_array(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -491,6 +510,7 @@ def select_method_allawi(vis):
     else:
         print(f"Error with {vis}")
         return -1
+    
 
 def read_and_update_file_allawi():
     data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data.csv'
@@ -511,9 +531,10 @@ def read_and_update_file_allawi():
         visibility = row["SO"]
         row_seen = select_vis_allawi(visibility)
         row_method = select_method_allawi(visibility)
+        row_methods = select_method_array(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -526,11 +547,11 @@ def read_and_update_file_allawi():
 
 #read_and_update_file_ICOUK()
 
-#read_and_update_file_ICOP()
+read_and_update_file_ICOP()
 
 #read_and_update_file_alrefay()
 
-read_and_update_file_allawi()
+#read_and_update_file_allawi()
 
 
 
