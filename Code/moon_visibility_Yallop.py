@@ -340,7 +340,7 @@ def plot_visibility_at_date(obs_date):
 
     #create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
 
-    #create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
+    create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
 
 def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
     #Plots moon visibility across a 3D globe
@@ -505,11 +505,10 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.show()
 
 date_to_plot = Time("2023-10-15")
-#plot_visibility_at_date(date_to_plot)
-
-date_to_plot = Time("2023-10-16")
 plot_visibility_at_date(date_to_plot)
 
+date_to_plot = Time("2023-10-16")
+#plot_visibility_at_date(date_to_plot)
 
 date_to_plot = Time("2023-10-17")
 #plot_visibility_at_date(date_to_plot)
