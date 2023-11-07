@@ -36,7 +36,7 @@ TITLE = f"{'XGBoost' if XGBOOST else 'Random Forest'} {'Eye' if not MULTI_LABEL_
 # ## Hyperparameters
 
 # %%
-NOTSWEEPING = False
+NOTSWEEPING = True
 if NOTSWEEPING:
     if XGBOOST:
         if MULTI_OUTPUT_METHOD:
@@ -158,7 +158,7 @@ def select_model():
                 method = "hist"
             model = XGBClassifier(tree_method=method, n_jobs=-1)
         else:
-            model = XGBClassifier(n_jobs=-1, callbacks=[WandbCallback()])
+            model = XGBClassifier(n_jobs=-1)
     else:
         if MULTI_OUTPUT_METHOD:
             model = MultiOutputClassifier(RandomForestClassifier(n_jobs=-1))
