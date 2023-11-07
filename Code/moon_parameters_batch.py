@@ -6,6 +6,7 @@ Created on Thu Sep 28 11:52:00 2023
 """
 
 #Standard imports
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -569,13 +570,34 @@ def read_and_update_file_allawi():
 
     data.to_csv('..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 
-read_and_update_file_ICOUK()
 
-read_and_update_file_ICOP()
+def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
-read_and_update_file_alrefay()
+    num_of_rows = no_of_points*no_of_points
 
-read_and_update_file_allawi()
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols[0:-5])
+    data.index.name="Index"
 
+    lat_arr = np.linspace(min_lat, max_lat, no_of_points)
+    lon_arr = np.linspace(min_lon, max_lon, no_of_points)
 
+    start = time.time()
+    for i, latitude in enumerate(lat_arr):
+        lap = time.time()
+        print(f"Calculating latitude {round(lat_arr[i],2)} at time={round(lap-start,2)}s")
+        for j, longitude in enumerate(lon_arr):
+        
+            data.loc[i] = get_moon_params(date,latitude,longitude)
+        
+    data.to_csv(f'mphys-moon/Data/Generated/{date_to_use.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
+    print(f"Total time: {round(time.time()-start,2)}s")
+#read_and_update_file_ICOUK()
 
+#read_and_update_file_ICOP()
+
+#read_and_update_file_alrefay()
+
+#read_and_update_file_allawi()
+
+date_to_use = Time("2023-03-22")
+generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
