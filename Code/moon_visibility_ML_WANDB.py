@@ -17,23 +17,56 @@ from wandb.xgboost import WandbCallback
 wandb.login()
 
 sweep_config = {
-    "method": "random", # try grid or random
+    "method": "bayes", # try grid or random
     "metric": {
       "name": "Accuracy",
       "goal": "maximize"   
     },
     "parameters": {
         "max_depth": {
-            "values": [3, 6, 9, 12]
+            "distribution": "int_uniform",
+            "max": 20,
+            "min": 1
         },
         "learning_rate": {
-             "values": [0.1, 0.05, 0.2]
+            "distribution": "uniform",
+            "max": 1,
+            "min": 0.1
         },
         "n_estimators": {
-            "values": [10,25,30,50,100,200]
+            "distribution": "int_uniform",
+            "max": 200,
+            "min": 10
         },
-        "max_sample": {
-            "values": [1, 0.5, 0.3]
+        "subsample": {
+            "distribution": "uniform",
+            "max": 1,
+            "min": 0.1
+        },
+        "min_split_loss": {
+            "distribution": "uniform",
+            "max": 5,
+            "min": 0
+        },
+        "reg_lambda": {
+            "distribution": "uniform",
+            "max": 5,
+            "min": 0
+        },
+        "reg_alpha": {
+            "distribution": "uniform",
+            "max": 5,
+            "min": 0
+        },
+        "max_leaves": {
+            "distribution": "int_uniform",
+            "max": 5,
+            "min": 0
+        },
+        "max_bin": {
+            "distribution": "int_uniform",
+            "max": 500,
+            "min": 100
         }
     }
 }
@@ -203,5 +236,5 @@ def train():
         wandb.log({"ROC curve" :roc_auc})
 
 sweep_id = wandb.sweep(sweep_config, project="moon_visibility_xgboost")
-wandb.agent(sweep_id, train, count=50)
+wandb.agent(sweep_id, train)
 wandb.finish()
