@@ -1,19 +1,16 @@
 import pandas as pd
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 # MACHINE LEARNING IMPORTS
 from xgboost import XGBClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, roc_auc_score, accuracy_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.preprocessing import MultiLabelBinarizer
 
 #WANDB IMPORTS
 import wandb
-from wandb.xgboost import WandbCallback
 wandb.login()
 
 sweep_config = {
@@ -25,51 +22,55 @@ sweep_config = {
     "parameters": {
         "max_depth": {
             "distribution": "int_uniform",
-            "max": 20,
+            "max": 10,
             "min": 1
         },
         "learning_rate": {
             "distribution": "uniform",
-            "max": 1,
-            "min": 0.1
+            "max": 0.5,
+            "min": 0.01
         },
         "n_estimators": {
             "distribution": "int_uniform",
             "max": 200,
             "min": 10
+        }
+    }
+}
+
+"""
+        "max_bin": {
+            "distribution": "int_uniform",
+            "max": 500,
+            "min": 100
+        }
+        "min_split_loss": {
+            "distribution": "uniform",
+            "max": 5,
+            "min": 0
         },
         "subsample": {
             "distribution": "uniform",
             "max": 1,
             "min": 0.1
         },
-        "min_split_loss": {
-            "distribution": "uniform",
-            "max": 5,
-            "min": 0
-        },
-        "reg_lambda": {
-            "distribution": "uniform",
-            "max": 5,
-            "min": 0
-        },
-        "reg_alpha": {
-            "distribution": "uniform",
-            "max": 5,
-            "min": 0
-        },
-        "max_leaves": {
+                "max_leaves": {
             "distribution": "int_uniform",
             "max": 5,
             "min": 0
         },
-        "max_bin": {
-            "distribution": "int_uniform",
-            "max": 500,
-            "min": 100
-        }
-    }
-}
+                "reg_alpha": {
+            "distribution": "uniform",
+            "max": 5,
+            "min": 0
+        },
+                "reg_lambda": {
+            "distribution": "uniform",
+            "max": 5,
+            "min": 0
+        },
+
+"""
 
 #METHOD = False # replace seen column with method seen column
 MULTI_OUTPUT_METHOD = False #Replace naked eye seen column with array of methods
@@ -105,7 +106,7 @@ allawi_data = pd.read_csv(allawi_data_file)
 data = pd.concat([icouk_data,icop_data,alrefay_data,allawi_data])
 
 #Drop index, dependent parameters (q value etc) and visibility scale
-data = data.drop(["Index","q","W","q'","W'","Visibility"], axis = 1)
+data = data.drop(["Index","q","W","q'","W'","Visibility","Source"], axis = 1)
 
 if MULTI_OUTPUT_METHOD:
     data = data.drop(["Seen", "Method"], axis = 1) # replaced by methods column
@@ -236,5 +237,5 @@ def train():
         wandb.log({"ROC curve" :roc_auc})
 
 sweep_id = wandb.sweep(sweep_config, project="moon_visibility_xgboost")
-wandb.agent(sweep_id, train)
+wandb.agent(sweep_id, train, count=200)
 wandb.finish()

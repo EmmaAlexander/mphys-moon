@@ -505,11 +505,11 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.savefig(f"Global moon visibility at best time ({title_date}).png",dpi=200)
     plt.show()
 
-date_to_plot = Time("2023-11-15")
-plot_visibility_at_date(date_to_plot)
+#date_to_plot = Time("2023-11-15")
+#plot_visibility_at_date(date_to_plot)
 
-#date_to_check = Time("2023-10-16 16:47")
-#lat = 54.0449
-#lon = -2.7993
-#get_moon_params(date_to_check,lat,lon,time_given=True,display=True)
+date_to_check = Time("1984-9-26")
+lat = 15.6
+lon = 35.6
+get_moon_params(date_to_check,lat,lon,display=True)
 

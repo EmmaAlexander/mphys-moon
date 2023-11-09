@@ -589,8 +589,22 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
         
             data.loc[i] = get_moon_params(date,latitude,longitude)
         
-    data.to_csv(f'mphys-moon/Data/Generated/{date_to_use.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
+    data.to_csv(f'mphys-moon/Data/Generated/{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
     print(f"Total time: {round(time.time()-start,2)}s")
+
+
+def add_sources():
+    files = ['mphys-moon/Data/icouk_sighting_data_with_params.csv',
+    'mphys-moon/Data/icop_ahmed_2020_sighting_data_with_params.csv',
+    'mphys-moon/Data/alrefay_2018_sighting_data_with_params.csv',
+    'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv']
+
+    source_names = ["ICOUK","ICOP","ALREFAY","SCHAEFER-ODEH"]
+    for i, file in enumerate(files):
+        raw_data = pd.read_csv(file)
+        raw_data["Source"] = np.full(raw_data.shape[0],source_names[i])
+        raw_data.to_csv(file)
+
 #read_and_update_file_ICOUK()
 
 #read_and_update_file_ICOP()
@@ -599,5 +613,7 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_allawi()
 
-date_to_use = Time("2023-03-22")
-generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+#date_to_use = Time("2023-03-22")
+#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+
+#add_sources()
