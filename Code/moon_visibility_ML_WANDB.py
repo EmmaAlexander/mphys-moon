@@ -14,11 +14,30 @@ from sklearn.preprocessing import MultiLabelBinarizer
 #WANDB IMPORTS
 import wandb
 from wandb.xgboost import WandbCallback
+wandb.login()
 
-# %% [markdown]
-# ## Options and setup
+sweep_config = {
+    "method": "random", # try grid or random
+    "metric": {
+      "name": "Accuracy",
+      "goal": "maximize"   
+    },
+    "parameters": {
+        "max_depth": {
+            "values": [3, 6, 9, 12]
+        },
+        "learning_rate": {
+             "values": [0.1, 0.05, 0.2]
+        },
+        "n_estimators": {
+            "values": [10,25,30,50,100,200]
+        },
+        "max_sample": {
+            "values": [1, 0.5, 0.3]
+        }
+    }
+}
 
-# %%
 #METHOD = False # replace seen column with method seen column
 MULTI_OUTPUT_METHOD = False #Replace naked eye seen column with array of methods
 MULTI_LABEL_METHOD = False #Replace naked eye seen column with either seen, visual aid or not seen
@@ -32,38 +51,8 @@ WANDB = True # Log to weights and biases.
 
 TITLE = f"{'XGBoost' if XGBOOST else 'Random Forest'} {'Eye' if not MULTI_LABEL_METHOD and not MULTI_OUTPUT_METHOD else ''}{'Multi-label' if MULTI_LABEL_METHOD else ''}{'Multi-output' if MULTI_OUTPUT_METHOD else ''} visibility"
 
-# %% [markdown]
-# ## Hyperparameters
+PARAMS = {'learning_rate': 0.5, 'max_depth': 2, 'n_estimators': 50}
 
-# %%
-NOTSWEEPING = True
-if NOTSWEEPING:
-    if XGBOOST:
-        if MULTI_OUTPUT_METHOD:
-            PARAMS = {'learning_rate': 0.1733, 'max_depth': 6, 'n_estimators': 50}
-        elif MULTI_LABEL_METHOD:
-            PARAMS = {'learning_rate': 0.4183, 'max_depth': 2, 'n_estimators': 100}
-        else:
-            PARAMS = {'learning_rate': 0.5, 'max_depth': 2, 'n_estimators': 50}
-            
-    else: #Random forest
-        if MULTI_OUTPUT_METHOD:
-            PARAMS = {}
-        elif MULTI_LABEL_METHOD:
-            PARAMS = {'max_depth': 10, 'max_features': 'log2', 'n_estimators': 50}
-        else:
-            PARAMS = {'max_depth': 12, 'n_estimators': 150}
-
-    wandb.init(
-        # set the wandb project where this run will be logged
-        project="moon_visibility_xgboost",
-        config=PARAMS)
-else:
-    wandb.init(
-        # set the wandb project where this run will be logged
-        project="moon_visibility_xgboost")
-
-# %%
 icouk_data_file = '..\\Data\\icouk_sighting_data_with_params.csv'
 icop_data_file = '..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv'
 alrefay_data_file = '..\\Data\\alrefay_2018_sighting_data_with_params.csv'
@@ -116,11 +105,9 @@ if CLOUDCUT:
     data = data[data["Cloud Level"] <= 0.5]
     #data = data[data["Cloud Level"] == 0]
 
-# %%
 # List of features without label feature
 variable_list =  data.columns.tolist()
 features = variable_list
-
 
 if MULTI_OUTPUT_METHOD:
     orig_y = np.array(data['Methods'].str.split(";"))
@@ -145,10 +132,6 @@ else:
 
 X = data[features]
 
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2) # 80/20 training/test split
-
-# %%
-# Produce randomforest classifier model and fit to training data
 def select_model():
     if XGBOOST:
         if MULTI_OUTPUT_METHOD:
@@ -164,60 +147,61 @@ def select_model():
             model = MultiOutputClassifier(RandomForestClassifier(n_jobs=-1))
         else:
             model = RandomForestClassifier(n_jobs=-1)
-
-    model = model.set_params(**wandb.config)
     return model
-model = select_model()
-# Fitting takes the input and "truth" data for classification purposes
-model.fit(x_train, y_train)
-
-# %%
-def get_easiest_method_array(methods):
-    easiest_methods = np.zeros(methods.shape)
-    easiest_methods[np.arange(0,methods.shape[0],1),np.argmax(methods,axis=1)] = 1
-    return easiest_methods
-
-def get_easiest_method_names(methods):
-    easiest_methods = get_easiest_method_array(methods)
-    return mlb.inverse_transform(easiest_methods.astype(int))
-
-# Produce predictions for the classification of your training dataset using your model:
-y_pred = model.predict(x_train)
-
-# plot the accuracies of said predictions
-print("Accuracy on training dataset:",accuracy_score(y_train, y_pred))
-rf_acc_train = accuracy_score(y_train, y_pred)
-y_pred = model.predict(x_test)
-
-print("Accuracy on testing dataset:", accuracy_score(y_test, y_pred))
-rf_acc_test = accuracy_score(y_test, y_pred)
-
-wandb.log({"Accuracy": rf_acc_test})
-
-if MULTI_OUTPUT_METHOD:
-    print("Accuracy on testing dataset (easiest method only):", accuracy_score(get_easiest_method_names(y_test), get_easiest_method_names(y_pred)))
 
 
-# %% [markdown]
-# ## ROC curve
+def train():
+    config_defaults = PARAMS
+    wandb.init(config=config_defaults)  # defaults are over-ridden during the sweep
+    config = wandb.config
 
-# %%
-# Get predicted class probabilities for the test set 
-if MULTI_OUTPUT_METHOD:
-    #y_pred_prob = rf.predict_proba(x_test)
-    #roc_auc = roc_auc_score(y_test, y_pred_prob)
-    print("Not currently working")
-elif MULTI_LABEL_METHOD:
-    y_pred_prob = model.predict_proba(x_test)
-    roc_auc = roc_auc_score(y_test, y_pred_prob, multi_class="ovr")
-    print(f"ROC curve {roc_auc}")
-    wandb.log({"ROC curve" :roc_auc})
-else:
-    y_pred_prob = model.predict_proba(x_test)[:, 1] 
-    roc_auc = roc_auc_score(y_test, y_pred_prob)
-    print(f"ROC curve {roc_auc}")
-    wandb.log({"ROC curve" :roc_auc})
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2) # 80/20 training/test split
 
-# %%
-#wandb.log({'learning_rate': wandb.config["learning_rate"], 'max_depth': wandb.config["max_depth"], 'n_estimators': wandb.config["n_estimators"]})
+    model = select_model()
+    model = model.set_params(**config)
+    # Fitting takes the input and "truth" data for classification purposes
+    model.fit(x_train, y_train)
+
+    def get_easiest_method_array(methods):
+        easiest_methods = np.zeros(methods.shape)
+        easiest_methods[np.arange(0,methods.shape[0],1),np.argmax(methods,axis=1)] = 1
+        return easiest_methods
+
+    def get_easiest_method_names(methods):
+        easiest_methods = get_easiest_method_array(methods)
+        return mlb.inverse_transform(easiest_methods.astype(int))
+
+    # Produce predictions for the classification of your training dataset using your model:
+    y_pred = model.predict(x_train)
+
+    # plot the accuracies of said predictions
+    print("Accuracy on training dataset:",accuracy_score(y_train, y_pred))
+    rf_acc_train = accuracy_score(y_train, y_pred)
+    y_pred = model.predict(x_test)
+
+    print("Accuracy on testing dataset:", accuracy_score(y_test, y_pred))
+    rf_acc_test = accuracy_score(y_test, y_pred)
+
+    wandb.log({"Accuracy": rf_acc_test})
+
+    if MULTI_OUTPUT_METHOD:
+        print("Accuracy on testing dataset (easiest method only):", accuracy_score(get_easiest_method_names(y_test), get_easiest_method_names(y_pred)))
+
+    if MULTI_OUTPUT_METHOD:
+        #y_pred_prob = rf.predict_proba(x_test)
+        #roc_auc = roc_auc_score(y_test, y_pred_prob)
+        print("Not currently working")
+    elif MULTI_LABEL_METHOD:
+        y_pred_prob = model.predict_proba(x_test)
+        roc_auc = roc_auc_score(y_test, y_pred_prob, multi_class="ovr")
+        print(f"ROC curve {roc_auc}")
+        wandb.log({"ROC curve" :roc_auc})
+    else:
+        y_pred_prob = model.predict_proba(x_test)[:, 1] 
+        roc_auc = roc_auc_score(y_test, y_pred_prob)
+        print(f"ROC curve {roc_auc}")
+        wandb.log({"ROC curve" :roc_auc})
+
+sweep_id = wandb.sweep(sweep_config, project="moon_visibility_xgboost")
+wandb.agent(sweep_id, train, count=50)
 wandb.finish()
