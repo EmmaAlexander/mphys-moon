@@ -22,39 +22,40 @@ sweep_config = {
     },
     "parameters": {
         "batch_size": {
-            'distribution': 'q_log_uniform_values',
-            'q': 2,
+            'distribution': 'int_uniform',
+            #'q': 2,
             'min': 32,
             'max': 256,
         },
         "hidden_size": {
-            'distribution': 'q_log_uniform_values',
-            'q': 2,
+            'distribution': 'int_uniform',
+            #'q': 2,
             'min': 4,
-            'max': 256,
+            'max': 32,
         },
         "num_epochs": {
-            'distribution': 'q_log_uniform_values',
-            'q': 2,
+            'distribution': 'int_uniform',
             'min': 50,
-            'max': 500,
+            'max': 300,
         },
         "learning_rate": {
             'distribution': 'uniform',
             'min': 0,
-            'max': 0.1
+            'max': 0.05,
         },
         "weight_decay": {
             'distribution': 'uniform',
             'min': 0,
             'max': 0.1
+        },
+        "layer_num": {
+            'values': [1, 2, 3]
         }
     }
 }
 
 
-PARAMS = {'batch_size': 32, 'hidden_size': 32, 'num_epochs': 300, 'learning_rate': 0.001, 'weight_decay': 0.0001}
-
+PARAMS = {'batch_size': 32, 'hidden_size': 32, 'num_epochs': 200, 'learning_rate': 0.01 , 'weight_decay': 0.01, 'optimizer':'adam'} #
 METHOD = False
 USE_GPU = False
 LINUX = False
@@ -130,6 +131,7 @@ def sweep_train():
     num_epochs = wandb.config['num_epochs']
     learning_rate = wandb.config['learning_rate']
     weight_decay = wandb.config['weight_decay']
+    layer_num = wandb.config['layer_num']
 
     X_train, X_val_and_test, Y_train, Y_val_and_test = train_test_split(X, y,test_size=0.3)
     X_val, X_test, Y_val, Y_test = train_test_split(X_val_and_test, Y_val_and_test, test_size=0.5)
@@ -144,7 +146,8 @@ def sweep_train():
         
         def forward(self, x):
             x = torch.relu(self.fc1(x))
-            x = torch.relu(self.fc2(x))
+            for i in range(0,layer_num):
+                x = torch.relu(self.fc2(x))
             x = self.fc3(x)
             return x
         
