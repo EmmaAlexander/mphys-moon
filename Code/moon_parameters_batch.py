@@ -74,7 +74,35 @@ def get_best_obs_time(sunset, moonset):
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
 
-def get_sunset_time(obs_date, lat_arr,long_arr):
+def get_sunset_time(obs_date,lat, lon):
+    #Gets moonset time using skyfield (MEDIUM)
+    location = api.wgs84.latlon(lat,lon)
+
+    t0 = ts.from_astropy(obs_date)
+    t1 = ts.from_astropy(obs_date+TimeDelta(1,format="jd"))
+
+    f = almanac.sunrise_sunset(eph, location)
+    t, y = almanac.find_discrete(t0, t1, f)
+
+    sunsets = t[y==0]
+
+    #MAY NO LONGER BE NEEDED?
+    if len(sunsets) == 0: #If no moonset found, add another day to search forward
+        t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
+        f = almanac.sunrise_sunset(eph, location)
+        t, y = almanac.find_discrete(t0, t1, f)
+        sunsets = t[y==0]
+
+    try:
+        sunset = sunsets.utc_iso()[0]
+
+    except:
+        print(f"Error calculating sunset for Longitude: {lon} Latitude: {lat}.")
+        sunset = obs_date
+
+    return sunset
+
+def get_sunset_time2(obs_date, lat_arr,long_arr):
     #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
     #Gets array of sunset times
     #Date needs to be Time object
@@ -82,7 +110,7 @@ def get_sunset_time(obs_date, lat_arr,long_arr):
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
     return sunsets
 
-def get_sunset_time2(d,lat,lon):
+def get_sunset_time3(d,lat,lon):
     #Gets sunset and moonset using astroplan (VERY SLOW)
     coords=EarthLocation.from_geodetic(lon=lon,lat=lat)
 
@@ -121,33 +149,6 @@ def get_moonset_time(obs_date,lat, lon):
 
     return moonset
 
-def get_sun_moonset_date(d,lat,lon):
-    #Gets UTC time to search for moon/sunset from location
-    twelve_hours = TimeDelta(0.5,format="jd")
-
-    #Get time difference between UTC and local
-    local_time_diff = get_time_zone(latitude=lat,longitude=lon)
-    twelve_hours = TimeDelta(0.5,format="jd")
-
-    #If west of 0 deg longitude, search from DD-1/MM/YYYY 12:00 LOCAL
-    if lon < 0:
-        #Create object that is  DD-1/MM/YYYY 12:00 LOCAL
-        local_midday_day_before = d - twelve_hours
-
-        #SUBTRACT time diff to go from local to UTC
-        utc_search_time = local_midday_day_before - local_time_diff + TimeDelta(1,format="jd")
-
-
-    #If east of 0 deg longitude, search from DD/MM/YYYY 00:00 UTC
-    elif lon >= 0:
-        #Create object that is  DD/MM/YYYY 12:00 LOCAL
-        local_midday_day_of = d + twelve_hours
-
-        #SUBTRACT time diff to go from local to UTC
-        utc_search_time = local_midday_day_of - local_time_diff
-
-    return utc_search_time
-
 def get_new_moon_date(obs_date):
     #Gets date of last new moon
     one_month_ago = obs_date - TimeDelta(30,format="jd")
@@ -178,10 +179,10 @@ def get_moon_params(d,lat,lon):
 
 
     #Calculate sunset and moonset time
-    sun_moonset_date = get_sun_moonset_date(d,lat,lon)
+    #sun_moonset_date = get_sun_moonset_date(d,lat,lon)
     #sunset = get_sunset_time(sun_moonset_date,lat,lon) #Use suncalc
-    sunset = get_sunset_time2(sun_moonset_date,lat,lon) #Use astroplan
-    moonset = get_moonset_time(sun_moonset_date,lat,lon)
+    sunset = get_sunset_time(d,lat,lon) #Use astroplan
+    moonset = get_moonset_time(d,lat,lon)
 
     best_obs_time = get_best_obs_time(sunset, moonset)
     #Calculate best observation time if no time given
@@ -537,7 +538,7 @@ def select_method_allawi(vis):
 
 
 def read_and_update_file_allawi():
-    data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data.csv'
+    data_file = 'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
 
     num_of_rows = raw_data.shape[0]
@@ -568,7 +569,7 @@ def read_and_update_file_allawi():
         if i % 100 == 0:
             print(f"Generating row {i}")
 
-    data.to_csv('..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
+    data.to_csv('mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 
 
 def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
@@ -611,7 +612,7 @@ def add_sources():
 
 #read_and_update_file_alrefay()
 
-#read_and_update_file_allawi()
+read_and_update_file_allawi()
 
 #date_to_use = Time("2023-03-22")
 #generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)

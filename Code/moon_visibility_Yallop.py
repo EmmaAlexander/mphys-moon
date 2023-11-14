@@ -87,7 +87,7 @@ def get_best_obs_time(sunset, moonset):
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
 
-def get_sunset_time(obs_date, lat_arr,long_arr):
+def get_sunset_time_old(obs_date, lat_arr,long_arr):
     #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
     #Gets array of sunset times
     #Date needs to be Time object
@@ -123,6 +123,34 @@ def get_moonset_time(obs_date,lat, lon):
         moonset = obs_date
 
     return moonset
+
+def get_sunset_time(obs_date,lat, lon):
+    #Gets moonset time using skyfield (MEDIUM)
+    location = api.wgs84.latlon(lat,lon)
+
+    t0 = ts.from_astropy(obs_date)
+    t1 = ts.from_astropy(obs_date+TimeDelta(1,format="jd"))
+
+    f = almanac.sunrise_sunset(eph, location)
+    t, y = almanac.find_discrete(t0, t1, f)
+
+    sunsets = t[y==0]
+
+    #MAY NO LONGER BE NEEDED?
+    if len(sunsets) == 0: #If no moonset found, add another day to search forward
+        t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
+        f = almanac.sunrise_sunset(eph, location)
+        t, y = almanac.find_discrete(t0, t1, f)
+        sunsets = t[y==0]
+
+    try:
+        sunset = sunsets.utc_iso()[0]
+
+    except:
+        print(f"Error calculating sunset for Longitude: {lon} Latitude: {lat}.")
+        sunset = obs_date
+
+    return sunset
 
 
 def get_sunset_moonset(d,coords,display=False): #NOT IN USE
@@ -187,7 +215,7 @@ def get_moon_age(obs_date):
     return moon_age.jd
 
 #CALCULATE Q-VALUE
-def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=False):
+def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=False,plot24hrs=False):
     #This calculates the q-test value and other moon params
 
     #Create coordinates object
@@ -199,17 +227,20 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
 
     
     
-    #Calculate sunset and moonset time if not given (SLOW)
-    sun_moonset_date = get_sun_moonset_date(d,lat,lon)
+    #Calculate sunset and moonset time if not given
+    if plot24hrs:
+        sun_moonset_date = get_sun_moonset_date(d,lat,lon)
+    else:
+        sun_moonset_date = d
     if sunset is None:
         sunset = get_sunset_time(sun_moonset_date,lat,lon)
     if moonset is None:
         moonset = get_moonset_time(sun_moonset_date,lat,lon)
 
     #Other ways to calculate sun/moonset
-    #sunset, moonset = get_sunset_moonset(sun_moonset_date, coords)
+    #sunset, moonset = get_sunset_moonset(d, coords)
 
-        
+
     best_obs_time = get_best_obs_time(sunset, moonset)
     #Calculate best observation time if no time given
     if not time_given:
@@ -313,8 +344,8 @@ def plot_visibility_at_date(obs_date):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-60, 60, 40)
-    long_arr = np.linspace(-180, 180, 40)
+    lat_arr = np.linspace(-60, 60, 20)
+    long_arr = np.linspace(-180, 180, 20)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
@@ -329,7 +360,8 @@ def plot_visibility_at_date(obs_date):
         #moonsets = get_moonset_time(obs_date, np.full(len(lat_arr),lat_arr[i]), long_arr)
         for j, longitude in enumerate(long_arr):
             #q_vals[j,i] = get_moon_params(obs_date, latitude, longitude, sunset=sunsets[j])
-            q_vals[j,i] = get_moon_params(obs_date, latitude, longitude)
+
+            q_vals[j,i] = get_moon_params(obs_date, latitude, longitude,plot24hrs=True)
 
 
     print(f"Total time: {round(time.time()-start,2)}s")
@@ -505,11 +537,19 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.savefig(f"Global moon visibility at best time ({title_date}).png",dpi=200)
     plt.show()
 
-#date_to_plot = Time("2023-11-15")
-#plot_visibility_at_date(date_to_plot)
+date_to_plot = Time("2023-03-22")
+plot_visibility_at_date(date_to_plot)
 
-date_to_check = Time("1984-9-26")
-lat = 15.6
-lon = 35.6
+date_to_check = Time("1987-5-29") #Does not work, best time is 03:25 1987-5-30
+lat = 39.2
+lon = -105.5
 get_moon_params(date_to_check,lat,lon,display=True)
 
+date_to_check = Time("1990-11-19") #Works, best time is 22:00 1990-11-19
+lat = 39
+lon = -76.8
+get_moon_params(date_to_check,lat,lon,display=True)
+
+
+date_to_check = Time("2023-03-22")
+#print(get_moon_age(date_to_check))
