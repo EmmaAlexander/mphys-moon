@@ -74,8 +74,8 @@ def get_best_obs_time(sunset, moonset):
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
 
-def get_sunset_time(obs_date,lat, lon):
-    #Gets moonset time using skyfield (MEDIUM)
+def get_sunset_time(obs_date,lat, lon,sunrise=False):
+    #Gets sunset time using skyfield (MEDIUM)
     location = api.wgs84.latlon(lat,lon)
 
     t0 = ts.from_astropy(obs_date)
@@ -84,14 +84,14 @@ def get_sunset_time(obs_date,lat, lon):
     f = almanac.sunrise_sunset(eph, location)
     t, y = almanac.find_discrete(t0, t1, f)
 
-    sunsets = t[y==0]
+    sunsets = t[y==sunrise]
 
     #MAY NO LONGER BE NEEDED?
     if len(sunsets) == 0: #If no moonset found, add another day to search forward
         t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
         f = almanac.sunrise_sunset(eph, location)
         t, y = almanac.find_discrete(t0, t1, f)
-        sunsets = t[y==0]
+        sunsets = t[y==sunrise]
 
     try:
         sunset = sunsets.utc_iso()[0]
@@ -102,26 +102,7 @@ def get_sunset_time(obs_date,lat, lon):
 
     return sunset
 
-def get_sunset_time2(obs_date, lat_arr,long_arr):
-    #Gets sunset using suncalc (FAST, SUPPORTS ARRAYS)
-    #Gets array of sunset times
-    #Date needs to be Time object
-    date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
-    sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
-    return sunsets
-
-def get_sunset_time3(d,lat,lon):
-    #Gets sunset and moonset using astroplan (VERY SLOW)
-    coords=EarthLocation.from_geodetic(lon=lon,lat=lat)
-
-    obs = Observer(location=coords, timezone="UTC")
-
-    #moonset=obs.moon_set_time(time=d,which='next',n_grid_points=150)
-    sunset=obs.sun_set_time(time=d,which='next',n_grid_points=150)
-    return sunset
-
-
-def get_moonset_time(obs_date,lat, lon):
+def get_moonset_time(obs_date,lat, lon,moonrise=False):
     #Gets moonset time using skyfield (MEDIUM)
     location = api.wgs84.latlon(lat,lon)
 
@@ -131,14 +112,14 @@ def get_moonset_time(obs_date,lat, lon):
     f = almanac.risings_and_settings(eph, eph['Moon'], location)
     t, y = almanac.find_discrete(t0, t1, f)
 
-    moonsets = t[y==0]
+    moonsets = t[y==moonrise]
 
     #MAY NO LONGER BE NEEDED?
     if len(moonsets) == 0: #If no moonset found, add another day to search forward
         t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
         f = almanac.risings_and_settings(eph, eph['Moon'], location)
         t, y = almanac.find_discrete(t0, t1, f)
-        moonsets = t[y==0]
+        moonsets = t[y==moonrise]
 
     try:
         moonset = moonsets.utc_iso()[0]
@@ -157,8 +138,8 @@ def get_new_moon_date(obs_date):
     t, y = almanac.find_discrete(t0, t1, almanac.moon_phases(eph))
 
     new_moon = t[y==0][-1] #Get most recent new moon
-    new_moon_date = new_moon.utc_datetime().replace(hour=0, minute=0,second=0)
-    return Time(new_moon_date)
+    #new_moon_date = new_moon.utc_datetime().replace(hour=0, minute=0,second=0)
+    return Time(new_moon.utc_datetime())
 
 def get_moon_age(obs_date):
     #Gets age of moon as a number of days
@@ -181,8 +162,13 @@ def get_moon_params(d,lat,lon):
     #Calculate sunset and moonset time
     #sun_moonset_date = get_sun_moonset_date(d,lat,lon)
     #sunset = get_sunset_time(sun_moonset_date,lat,lon) #Use suncalc
-    sunset = get_sunset_time(d,lat,lon) #Use astroplan
-    moonset = get_moonset_time(d,lat,lon)
+
+    #Get moon age
+    MOON_AGE = get_moon_age(d)
+    use_rises = MOON_AGE >=20
+
+    sunset = get_sunset_time(d,lat,lon,use_rises) #Use astroplan
+    moonset = get_moonset_time(d,lat,lon,use_rises)
 
     best_obs_time = get_best_obs_time(sunset, moonset)
     #Calculate best observation time if no time given
@@ -238,11 +224,7 @@ def get_moon_params(d,lat,lon):
     #Calculate q-test value
     q = get_q_value(ARCV, W)
 
-    #Get moon age
-    MOON_AGE = get_moon_age(d)
     LAG = (Time(moonset).to_value("jd")-Time(sunset).to_value("jd"))*24*60
-
-
 
     return np.round([d.to_value('jd'),
             lat,
@@ -437,9 +419,6 @@ def read_and_update_file_ICOP():
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
-
-        #if i ==100:
-        #    break
 
         if i % 100 == 0:
             print(f"Generating row {i}")
@@ -687,9 +666,9 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_ICOP()
 
-#read_and_update_file_alrefay()
+read_and_update_file_alrefay()
 
-#read_and_update_file_allawi() - not currently using
+#read_and_update_file_allawi()
 
 read_and_update_file_yallop()
 
