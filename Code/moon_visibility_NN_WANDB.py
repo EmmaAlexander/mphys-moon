@@ -55,7 +55,7 @@ sweep_config = {
 }
 
 
-PARAMS = {'batch_size': 32, 'hidden_size': 32, 'num_epochs': 200, 'learning_rate': 0.01 , 'weight_decay': 0.01, 'optimizer':'adam'} #
+PARAMS = {'batch_size': 32, 'hidden_size': 32, 'num_epochs': 200, 'learning_rate': 0.01 , 'weight_decay': 0.01,'layer_num':1} #
 METHOD = False
 USE_GPU = False
 LINUX = False
