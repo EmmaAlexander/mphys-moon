@@ -91,19 +91,23 @@ icouk_data_file = '..\\Data\\icouk_sighting_data_with_params.csv'
 icop_data_file = '..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv'
 alrefay_data_file = '..\\Data\\alrefay_2018_sighting_data_with_params.csv'
 allawi_data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
+yallop_data_file = '..\\Data\\Data/yallop_sighting_data_with_params.csv'
 
 if LINUX:
-    icouk_data_file = 'mphys-moon/Data/icouk_sighting_data_with_params.csv'
-    icop_data_file = 'mphys-moon/Data/icop_ahmed_2020_sighting_data_with_params.csv'
-    alrefay_data_file = 'mphys-moon/Data/alrefay_2018_sighting_data_with_params.csv'
-    allawi_data_file = 'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
+    icouk_data_file = '../Data/icouk_sighting_data_with_params.csv'
+    icop_data_file = '../Data/icop_ahmed_2020_sighting_data_with_params.csv'
+    alrefay_data_file = '../Data/alrefay_2018_sighting_data_with_params.csv'
+    allawi_data_file = '../Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
+    yallop_data_file = '../Data/yallop_sighting_data_with_params.csv'
 
 icouk_data = pd.read_csv(icouk_data_file)
 icop_data = pd.read_csv(icop_data_file)
 alrefay_data = pd.read_csv(alrefay_data_file)
 allawi_data = pd.read_csv(allawi_data_file)
+yallop_data = pd.read_csv(yallop_data_file)
 
-data = pd.concat([icouk_data,icop_data,alrefay_data,allawi_data])
+
+data = pd.concat([icouk_data,icop_data,alrefay_data,yallop_data])
 
 #Drop index, dependent parameters (q value etc) and visibility scale
 data = data.drop(["Index","q","W","q'","W'","Visibility","Source"], axis = 1)
