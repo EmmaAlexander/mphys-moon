@@ -384,6 +384,7 @@ def read_and_update_file_ICOUK():
         if i % 100 == 0:
             print(f"Generating row {i}")
 
+    data["Source"] = np.full(data.shape[0],"ICOUK")
     data.to_csv('..\\Data\\icouk_sighting_data_with_params.csv')
 
 def select_seen_ICOP(row_seene,row_seenb,row_seent):
@@ -442,7 +443,7 @@ def read_and_update_file_ICOP():
 
         if i % 100 == 0:
             print(f"Generating row {i}")
-
+    data["Source"] = np.full(data.shape[0],"ICOP")
     data.to_csv('..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv')
 
 def select_means_alrefay(means):
@@ -498,6 +499,7 @@ def read_and_update_file_alrefay():
         if i % 100 == 0:
             print(f"Generating row {i}")
 
+    data["Source"] = np.full(data.shape[0],"ALREFAY")
     data.to_csv('..\\Data\\alrefay_2018_sighting_data_with_params.csv')
 
 def select_vis_allawi(vis):
@@ -569,7 +571,95 @@ def read_and_update_file_allawi():
         if i % 100 == 0:
             print(f"Generating row {i}")
 
+    data["Source"] = np.full(data.shape[0],"SCHAEFER/ODEH")
     data.to_csv('mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
+
+
+def select_vis_schaefer(vis):
+    vis = vis.strip()
+    if vis == "I": #Invisible with eye
+        return "Not_seen"
+    if vis == "I(I)": #Invisible with telescope and binoculars
+        return "Not_seen"
+    elif vis == "I(B)" : #Invisible with eye, and binoculars
+        return "Not_seen"
+    elif vis == "I(T)": #Invisible with eye, and with telescope
+        return "Not_seen"
+    elif vis == "I(V)": #Invisible with eye and with either binoculars or telescope
+        return "Not_seen"
+    elif vis == "V(T)": #Not visible with eye, visible with binoculars
+        return "Seen"
+    elif vis == "V(B)": #Not visible with eye visible with telescope
+        return "Seen"
+    elif vis == "V(V)": #Not visible with eye visible with either binoculars or telescope
+        return "Seen"
+    elif vis == "V(F)": #Visible with eye, after locating with visual aid
+        return "Seen"
+    elif vis == "V": #Visible with eye
+        return "Seen"
+    else:
+        print(f"Error with {vis}")
+        return -1
+    
+def select_method_schaefer(vis):
+    vis = vis.strip()
+    if vis == "I": #Invisible with eye
+        return "Not_seen"
+    if vis == "I(I)": #Invisible with telescope and binoculars
+        return "Not_seen"
+    elif vis == "I(B)" : #Invisible with eye, and binoculars
+        return "Not_seen"
+    elif vis == "I(T)": #Invisible with eye, and with telescope
+        return "Not_seen"
+    elif vis == "I(V)": #Invisible with eye and with either binoculars or telescope
+        return "Not_seen"
+    elif vis == "V(F)": #Visible with eye, after locating with visual aid
+        return "Seen_eye" #Assuming seen
+    elif vis == "V(B)": #Not visible with eye, visible with binoculars
+        return "Seen_binoculars"
+    elif vis == "V(T)": #Not visible with eye visible with telescope
+        return "Seen_telescope"
+    elif vis == "V(V)": #Not visible with eye visible with either binoculars or telescope
+        return "Seen_binoculars" #Assuming binoculars
+    elif vis == "V": #Visible
+        return "Seen_eye"
+    else:
+        print(f"Error with {vis}")
+        return -1
+
+def read_and_update_file_yallop():
+    data_file = 'Data\\yallop_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+
+    num_of_rows = raw_data.shape[0]
+
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
+    for i, row in raw_data.iterrows():
+        date_text = f"{row['D']}-{row['M']}-{row['Y']}"
+        row_date = Time(datetime.strptime(date_text, "%d-%m-%Y"))
+
+        row_lat = float(row["Lat"])
+        row_lon = float(row["Long"])
+        visibility = row["Visibility"]
+        row_seen = select_vis_schaefer(visibility)
+        row_method = select_method_schaefer(visibility)
+        row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
+        row_cloud = 0
+
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        new_data = get_moon_params(row_date,row_lat,row_lon)
+
+        row_to_add = np.hstack((new_data,existing_data))
+        data.loc[i] = row_to_add
+
+        if i % 100 == 0:
+            print(f"Generating row {i}")
+
+    data["Source"] = np.full(data.shape[0],"YALLOP")
+
+    data.to_csv('Data\\yallop_sighting_data_with_params.csv')
 
 
 def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
@@ -593,19 +683,6 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
     data.to_csv(f'mphys-moon/Data/Generated/{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
     print(f"Total time: {round(time.time()-start,2)}s")
 
-
-def add_sources():
-    files = ['mphys-moon/Data/icouk_sighting_data_with_params.csv',
-    'mphys-moon/Data/icop_ahmed_2020_sighting_data_with_params.csv',
-    'mphys-moon/Data/alrefay_2018_sighting_data_with_params.csv',
-    'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv']
-
-    source_names = ["ICOUK","ICOP","ALREFAY","SCHAEFER-ODEH"]
-    for i, file in enumerate(files):
-        raw_data = pd.read_csv(file)
-        raw_data["Source"] = np.full(raw_data.shape[0],source_names[i])
-        raw_data.to_csv(file)
-
 #read_and_update_file_ICOUK()
 
 #read_and_update_file_ICOP()
@@ -618,3 +695,7 @@ read_and_update_file_allawi()
 #generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
 #add_sources()
+
+# raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
+# raw_data["Date"] = Time(raw_data["Date"],format="jd").to_datetime()
+# raw_data.to_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params2.csv')
