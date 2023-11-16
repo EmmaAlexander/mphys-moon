@@ -148,7 +148,7 @@ def get_moon_age(obs_date):
     moon_age = obs_date-last_new_moon
     return moon_age.jd
 
-def get_sun_moonset_date_yallop(d,lat,lon):
+def get_sun_moonset_date_local(d,lat,lon):
     #Get time difference between UTC and local
     local_time_diff = get_time_zone(latitude=lat,longitude=lon)
     twelve_hours = TimeDelta(0.5,format="jd")
@@ -171,26 +171,9 @@ def get_sun_moonset_date_yallop(d,lat,lon):
 
     return utc_search_time
 
-def get_nearestsunset_moonset(d,coords,display=False): #Not in use
-    #Gets sunset and moonset using astroplan (VERY SLOW)
+def get_sunset_moonset_local(d,lat,lon):
 
-    obs = Observer(location=coords, timezone="UTC")
-
-    sunset=obs.sun_set_time(time=d,which='nearest',n_grid_points=150)
-    try:
-        moonset=obs.moon_set_time(time=d,which='nearest',n_grid_points=150)
-        
-    except TargetNeverUpWarning:
-        moonset=obs.moon_set_time(time=d+TimeDelta(1,format="jd"),which='nearest',n_grid_points=150)
-   
-    print(f"MOONSET: {moonset}")
-    print(f"SUNSET: {sunset}")
-
-    return Time(sunset), Time(moonset)
-
-def get_sunset_moonset_yallop(d,lat,lon):
-
-    sun_moonset_date = get_sun_moonset_date_yallop(d,lat,lon)
+    sun_moonset_date = get_sun_moonset_date_local(d,lat,lon)
     sunset = get_sunset_time(sun_moonset_date,lat,lon) #Use skyfield
     moonset = get_moonset_time(sun_moonset_date,lat,lon)
 
@@ -201,7 +184,7 @@ def get_sunset_moonset_yallop(d,lat,lon):
     return sunset, moonset
 
 #CALCULATE Q-VALUE
-def get_moon_params(d,lat,lon,source="DEFAULT"):
+def get_moon_params(d,lat,lon,local_dates=False):
     #This calculates the q-test value and other moon params
 
     #Create coordinates object
@@ -214,8 +197,8 @@ def get_moon_params(d,lat,lon,source="DEFAULT"):
 
     #Calculate sunset and moonset time
 
-    if source == "YALLOP":
-        sunset, moonset = get_sunset_moonset_yallop(d,lat,lon)
+    if local_dates:
+        sunset, moonset = get_sunset_moonset_local(d,lat,lon)
     else:
         sunset = get_sunset_time(d,lat,lon) #Use skyfield
         moonset = get_moonset_time(d,lat,lon)
@@ -392,7 +375,7 @@ def select_method_ICOUK(row_seen,raw_method):
         return -1
 
 def read_and_update_file_ICOUK():
-    data_file = 'mphys-moon/Data/icouk_sighting_data.csv'
+    data_file = 'Data\\icouk_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
 
     num_of_rows = raw_data.shape[0]
@@ -420,7 +403,7 @@ def read_and_update_file_ICOUK():
             print(f"Generating row {i}")
 
     data["Source"] = np.full(data.shape[0],"ICOUK")
-    data.to_csv('mphys-moon/Data/icouk_sighting_data_with_params.csv')
+    data.to_csv('Data\\icouk_sighting_data_with_params.csv')
 
 def select_seen_ICOP(row_seene,row_seenb,row_seent):
     if row_seene:
@@ -446,7 +429,7 @@ def select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc):
 
 
 def read_and_update_file_ICOP():
-    data_file = 'mphys-moon/Data/icop_ahmed_2020_sighting_data.csv'
+    data_file = 'Data\\icop_ahmed_2020_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
 
     num_of_rows = raw_data.shape[0]
@@ -476,7 +459,7 @@ def read_and_update_file_ICOP():
         if i % 100 == 0:
             print(f"Generating row {i}")
     data["Source"] = np.full(data.shape[0],"ICOP")
-    data.to_csv('mphys-moon/Data/icop_ahmed_2020_sighting_data_with_params.csv')
+    data.to_csv('Data\\icop_ahmed_2020_sighting_data_with_params.csv')
 
 def select_means_alrefay(means):
     means = means.strip()
@@ -501,7 +484,7 @@ def select_method_alrefay(means):
         return -1
 
 def read_and_update_file_alrefay():
-    data_file = 'mphys-moon/Data/alrefay_2018_sighting_data.csv'
+    data_file = 'Data\\alrefay_2018_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
 
     num_of_rows = raw_data.shape[0]
@@ -525,14 +508,11 @@ def read_and_update_file_alrefay():
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
 
-        #if i ==100:
-        #    break
-
         if i % 100 == 0:
             print(f"Generating row {i}")
 
     data["Source"] = np.full(data.shape[0],"ALREFAY")
-    data.to_csv('mphys-moon/Data/alrefay_2018_sighting_data_with_params.csv')
+    data.to_csv('Data\\alrefay_2018_sighting_data_with_params.csv')
 
 def select_vis_schaefer(vis):
     vis = vis.strip()
@@ -587,7 +567,7 @@ def select_method_schaefer(vis):
         return -1
 
 def read_and_update_file_allawi():
-    data_file = 'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data.csv'
+    data_file = 'Data\\schaefer_odeh_allawi_2022_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
 
     num_of_rows = raw_data.shape[0]
@@ -610,7 +590,7 @@ def read_and_update_file_allawi():
         row_cloud = 0
 
         existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
-        new_data = get_moon_params(row_date,row_lat,row_lon)
+        new_data = get_moon_params(row_date,row_lat,row_lon,True)
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
@@ -619,7 +599,7 @@ def read_and_update_file_allawi():
             print(f"Generating row {i}")
 
     data["Source"] = np.full(data.shape[0],"SCHAEFER/ODEH")
-    data.to_csv('mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
+    data.to_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 
 
 def read_and_update_file_yallop():
@@ -644,7 +624,7 @@ def read_and_update_file_yallop():
         row_cloud = 0
 
         existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
-        new_data = get_moon_params(row_date,row_lat,row_lon,"YALLOP")
+        new_data = get_moon_params(row_date,row_lat,row_lon,True)
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
@@ -686,9 +666,9 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_alrefay()
 
-#read_and_update_file_allawi()
+read_and_update_file_allawi()
 
-read_and_update_file_yallop()
+#read_and_update_file_yallop()
 
 date_to_use = Time("2023-03-22")
 #generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
