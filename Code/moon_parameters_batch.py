@@ -4,7 +4,8 @@ Created on Thu Sep 28 11:52:00 2023
 
 @author: Neil Power & Ezzy Cross
 """
-
+#import warnings
+#warnings.filterwarnings('error')
 #Standard imports
 import time
 from datetime import datetime
@@ -29,7 +30,7 @@ from skyfield import almanac
 
 #Other imports
 from suncalc import get_times
-from astroplan import Observer
+from astroplan import Observer, TargetNeverUpWarning
 from timezonefinder import TimezoneFinder
 ZoneFinder = TimezoneFinder()
 
@@ -64,12 +65,12 @@ def get_time_zone(latitude,longitude):
 def get_best_obs_time(sunset, moonset):
     #Gets best time using Bruin's method
 
-    sunset = Time(sunset, scale='utc')
-    moonset = Time(moonset, scale='utc')
+    sunset = Time(sunset)
+    moonset = Time(moonset)
 
     #Bruin best time Tb = (5 Ts +4 Tm)/ 9
     best_time = (1/9)*(5*sunset.to_value("jd")+4*moonset.to_value("jd"))
-    return Time(best_time, format="jd", scale='utc')
+    return Time(best_time, format="jd")
 
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
@@ -87,7 +88,7 @@ def get_sunset_time(obs_date,lat, lon,sunrise=False):
     sunsets = t[y==sunrise]
 
     #MAY NO LONGER BE NEEDED?
-    if len(sunsets) == 0: #If no moonset found, add another day to search forward
+    if len(sunsets) == 0: #If no sunset found, add another day to search forward
         t1 = ts.from_astropy(obs_date+TimeDelta(2,format="jd"))
         f = almanac.sunrise_sunset(eph, location)
         t, y = almanac.find_discrete(t0, t1, f)
@@ -130,7 +131,7 @@ def get_moonset_time(obs_date,lat, lon,moonrise=False):
 
     return moonset
 
-def get_new_moon_date(obs_date):
+def get_new_moon_date(obs_date): # Not sure this is working
     #Gets date of last new moon
     one_month_ago = obs_date - TimeDelta(30,format="jd")
     t0 = ts.from_astropy(one_month_ago)
@@ -147,8 +148,60 @@ def get_moon_age(obs_date):
     moon_age = obs_date-last_new_moon
     return moon_age.jd
 
+def get_sun_moonset_date_yallop(d,lat,lon):
+    #Get time difference between UTC and local
+    local_time_diff = get_time_zone(latitude=lat,longitude=lon)
+    twelve_hours = TimeDelta(0.5,format="jd")
+
+    #If west of 0 deg longitude, search from DD-1/MM/YYYY 12:00 LOCAL
+    if lon < 0:
+        #Create object that is  DD-1/MM/YYYY 12:00 LOCAL
+        local_midday_day_before = d - twelve_hours
+
+        #SUBTRACT time diff to go from local to UTC
+        utc_search_time = local_midday_day_before - local_time_diff + TimeDelta(1,format="jd")
+
+    #If east of 0 deg longitude, search from DD/MM/YYYY 00:00 UTC
+    elif lon >= 0:
+        #Create object that is  DD/MM/YYYY 12:00 LOCAL
+        local_midday_day_of = d + twelve_hours
+
+        #SUBTRACT time diff to go from local to UTC
+        utc_search_time = local_midday_day_of - local_time_diff
+
+    return utc_search_time
+
+def get_nearestsunset_moonset(d,coords,display=False): #Not in use
+    #Gets sunset and moonset using astroplan (VERY SLOW)
+
+    obs = Observer(location=coords, timezone="UTC")
+
+    sunset=obs.sun_set_time(time=d,which='nearest',n_grid_points=150)
+    try:
+        moonset=obs.moon_set_time(time=d,which='nearest',n_grid_points=150)
+        
+    except TargetNeverUpWarning:
+        moonset=obs.moon_set_time(time=d+TimeDelta(1,format="jd"),which='nearest',n_grid_points=150)
+   
+    print(f"MOONSET: {moonset}")
+    print(f"SUNSET: {sunset}")
+
+    return Time(sunset), Time(moonset)
+
+def get_sunset_moonset_yallop(d,lat,lon):
+
+    sun_moonset_date = get_sun_moonset_date_yallop(d,lat,lon)
+    sunset = get_sunset_time(sun_moonset_date,lat,lon) #Use skyfield
+    moonset = get_moonset_time(sun_moonset_date,lat,lon)
+
+    if moonset < sunset: # Use sunrise and moonrise
+        sunset = get_sunset_time(sun_moonset_date-TimeDelta(1,format="jd"),lat,lon,sunrise=True) #Use skyfield
+        moonset = get_moonset_time(sun_moonset_date-TimeDelta(1,format="jd"),lat,lon,moonrise=True)
+
+    return sunset, moonset
+
 #CALCULATE Q-VALUE
-def get_moon_params(d,lat,lon):
+def get_moon_params(d,lat,lon,source="DEFAULT"):
     #This calculates the q-test value and other moon params
 
     #Create coordinates object
@@ -160,16 +213,13 @@ def get_moon_params(d,lat,lon):
 
 
     #Calculate sunset and moonset time
-    #sun_moonset_date = get_sun_moonset_date(d,lat,lon)
-    #sunset = get_sunset_time(sun_moonset_date,lat,lon) #Use suncalc
 
-    #Get moon age
-    MOON_AGE = get_moon_age(d)
-    use_rises = MOON_AGE >=20
-
-    sunset = get_sunset_time(d,lat,lon,use_rises) #Use astroplan
-    moonset = get_moonset_time(d,lat,lon,use_rises)
-
+    if source == "YALLOP":
+        sunset, moonset = get_sunset_moonset_yallop(d,lat,lon)
+    else:
+        sunset = get_sunset_time(d,lat,lon) #Use skyfield
+        moonset = get_moonset_time(d,lat,lon)
+    
     best_obs_time = get_best_obs_time(sunset, moonset)
     #Calculate best observation time if no time given
     d = best_obs_time
@@ -183,6 +233,9 @@ def get_moon_params(d,lat,lon):
     #Get moon and sun positions in alt/az coords
     moon_altaz = moon.transform_to(AltAz(obstime=d,location=coords))
     sun_altaz = sun.transform_to(AltAz(obstime=d,location=coords))
+
+    #Get moon age
+    MOON_AGE = get_moon_age(d)
 
     #Get distance to Moon from Sun and Earth
     MOON_EARTH_DIST = moon.separation_3d(earth)
@@ -481,79 +534,6 @@ def read_and_update_file_alrefay():
     data["Source"] = np.full(data.shape[0],"ALREFAY")
     data.to_csv('mphys-moon/Data/alrefay_2018_sighting_data_with_params.csv')
 
-def select_vis_allawi(vis):
-    vis = vis.strip()
-    if vis == "I":
-        return "Not_seen"
-    elif vis == "I(B)":
-        return "Seen"
-    elif vis == "I(T)":
-        return "Seen"
-    elif vis == "I(V)":
-        return "Seen"
-    elif vis == "V(F)":
-        return "Seen"
-    elif vis == "V":
-        return "Seen"
-    else:
-        print(f"Error with {vis}")
-        return -1
-
-def select_method_allawi(vis):
-    vis = vis.strip()
-    if vis == "I":
-        return "Not_seen"
-    elif vis == "I(B)":
-        return "Seen_binoculars"
-    elif vis == "I(T)":
-        return "Seen_telescope"
-    elif vis == "I(V)":
-        return "Seen_binoculars"
-    elif vis == "V(F)":
-        return "Seen_eye"
-    elif vis == "V":
-        return "Seen_eye"
-    else:
-        print(f"Error with {vis}")
-        return -1
-
-
-def read_and_update_file_allawi():
-    data_file = 'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data.csv'
-    raw_data = pd.read_csv(data_file)
-
-    num_of_rows = raw_data.shape[0]
-
-    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
-    data.index.name="Index"
-    for i, row in raw_data.iterrows():
-        date_text = row["Sight Date Best Time"].strip()[0:10]
-        if date_text[2] == "-":
-            row_date = Time(datetime.strptime(date_text, "%d-%m-%Y"))
-        else:
-            row_date = Time(datetime.strptime(date_text, "%Y-%m-%d"))
-        row_lat = float(row["Lat"])
-        row_lon = float(row["Lon"])
-        visibility = row["SO"]
-        row_seen = select_vis_allawi(visibility)
-        row_method = select_method_allawi(visibility)
-        row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
-        row_cloud = 0
-
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
-        new_data = get_moon_params(row_date,row_lat,row_lon)
-
-        row_to_add = np.hstack((new_data,existing_data))
-        data.loc[i] = row_to_add
-
-        if i % 100 == 0:
-            print(f"Generating row {i}")
-
-    data["Source"] = np.full(data.shape[0],"SCHAEFER/ODEH")
-    data.to_csv('mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
-
-
 def select_vis_schaefer(vis):
     vis = vis.strip()
     if vis == "I": #Invisible with eye
@@ -606,8 +586,44 @@ def select_method_schaefer(vis):
         print(f"Error with {vis}")
         return -1
 
+def read_and_update_file_allawi():
+    data_file = 'mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+
+    num_of_rows = raw_data.shape[0]
+
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
+    for i, row in raw_data.iterrows():
+        date_text = row["Sight Date Best Time"].strip()[0:10]
+        if date_text[2] == "-":
+            row_date = Time(datetime.strptime(date_text, "%d-%m-%Y"))
+        else:
+            row_date = Time(datetime.strptime(date_text, "%Y-%m-%d"))
+        row_lat = float(row["Lat"])
+        row_lon = float(row["Lon"])
+        visibility = row["SO"]
+        row_seen = select_vis_schaefer(visibility)
+        row_method = select_method_schaefer(visibility)
+        row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
+        row_cloud = 0
+
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        new_data = get_moon_params(row_date,row_lat,row_lon)
+
+        row_to_add = np.hstack((new_data,existing_data))
+        data.loc[i] = row_to_add
+
+        if i % 100 == 0:
+            print(f"Generating row {i}")
+
+    data["Source"] = np.full(data.shape[0],"SCHAEFER/ODEH")
+    data.to_csv('mphys-moon/Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
+
+
 def read_and_update_file_yallop():
-    data_file = 'mphys-moon/Data/yallop_sighting_data.csv'
+    data_file = 'Data\\yallop_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
 
     num_of_rows = raw_data.shape[0]
@@ -628,7 +644,7 @@ def read_and_update_file_yallop():
         row_cloud = 0
 
         existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
-        new_data = get_moon_params(row_date,row_lat,row_lon)
+        new_data = get_moon_params(row_date,row_lat,row_lon,"YALLOP")
 
         row_to_add = np.hstack((new_data,existing_data))
         data.loc[i] = row_to_add
@@ -638,7 +654,7 @@ def read_and_update_file_yallop():
 
     data["Source"] = np.full(data.shape[0],"YALLOP")
 
-    data.to_csv('mphys-moon/Data/yallop_sighting_data_with_params.csv')
+    data.to_csv('Data\\yallop_sighting_data_with_params.csv')
 
 
 def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
@@ -672,12 +688,10 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_allawi()
 
-#read_and_update_file_yallop()
+read_and_update_file_yallop()
 
-import os
-print(os.getcwd())
 date_to_use = Time("2023-03-22")
-generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
 #add_sources()
 
