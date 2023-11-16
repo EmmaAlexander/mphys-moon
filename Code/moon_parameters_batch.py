@@ -652,29 +652,32 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
     lon_arr = np.linspace(min_lon, max_lon, no_of_points)
 
     start = time.time()
+    position = 0
     for i, latitude in enumerate(lat_arr):
         lap = time.time()
         print(f"Calculating latitude {round(lat_arr[i],2)} at time={round(lap-start,2)}s")
         for j, longitude in enumerate(lon_arr):
+            data.loc[position] = get_moon_params(date,latitude,longitude)
+            position += 1
         
-            data.loc[i] = get_moon_params(date,latitude,longitude)
-        
-    data.to_csv(f'mphys-moon/Data/Generated/{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
+    data.to_csv(f'Data\\Generated\\{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
+
     print(f"Total time: {round(time.time()-start,2)}s")
 
 #read_and_update_file_ICOUK()
 
 #read_and_update_file_ICOP()
 
-read_and_update_file_alrefay()
+#read_and_update_file_alrefay()
 
 #read_and_update_file_allawi()
 
-read_and_update_file_yallop()
+#read_and_update_file_yallop()
 
-
-#date_to_use = Time("2023-03-22")
-#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+import os
+print(os.getcwd())
+date_to_use = Time("2023-03-22")
+generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
 #add_sources()
 
