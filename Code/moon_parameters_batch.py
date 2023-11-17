@@ -653,7 +653,7 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
         lap = time.time()
         print(f"Calculating latitude {round(lat_arr[i],2)} at time={round(lap-start,2)}s")
         for j, longitude in enumerate(lon_arr):
-            data.loc[position] = get_moon_params(date,latitude,longitude)
+            data.loc[position] = get_moon_params(date,latitude,longitude,True)
             position += 1
         
     data.to_csv(f'Data\\Generated\\{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
@@ -666,14 +666,15 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_alrefay()
 
-read_and_update_file_allawi()
+#read_and_update_file_allawi()
 
 #read_and_update_file_yallop()
 
-date_to_use = Time("2023-03-22")
+#date_to_use = Time("2023-11-15")
 #generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
-#add_sources()
+date_to_use = Time("2023-03-21") #UK
+generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
 
 # raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 # raw_data["Date"] = Time(raw_data["Date"],format="jd").to_datetime()
