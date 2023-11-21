@@ -342,12 +342,12 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
 
 #PLOTTING MAP ----------------------------------------------------------------
 
-def plot_visibility_at_date(obs_date):
+def plot_visibility_at_date(obs_date, no_of_points=20):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-60, 60, 20)
-    long_arr = np.linspace(-180, 180, 20)
+    lat_arr = np.linspace(-60, 60, no_of_points)
+    long_arr = np.linspace(-180, 180, no_of_points)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
@@ -372,7 +372,7 @@ def plot_visibility_at_date(obs_date):
 
     #create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
 
-    #create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
+    create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
 
     #create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
 
@@ -502,8 +502,8 @@ def create_globe_plot_set(obs_date,lat_arr,long_array,q_val):
 
     title_date = obs_date.to_datetime().date()
     plt.suptitle(f"Global moon visibility at best time ({title_date})", fontsize=25)
+    plt.savefig(f"Global moon visibility at best time globes ({title_date}).png",dpi=200)
     plt.show()
-
 
 def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     #Plots moon visibility across a world map
@@ -540,7 +540,7 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.show()
 
 date_to_plot = Time("2023-03-22")
-#plot_visibility_at_date(date_to_plot)
+plot_visibility_at_date(date_to_plot,40)
 
 date_to_check = Time("1987-5-29") #Does not work, best time is 03:25 1987-5-30
 lat = 39.2
@@ -555,7 +555,7 @@ lon = -76.8
 date_to_check = Time("1989-4-4") #Works, best time is 22:00 1990-11-19
 lat = 41.9
 lon = -88.7
-get_moon_params(date_to_check,lat,lon,display=True)
+#get_moon_params(date_to_check,lat,lon,display=True)
 
 date_to_check = Time("2023-03-22")
 

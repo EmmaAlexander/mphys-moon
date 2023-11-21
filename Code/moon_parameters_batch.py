@@ -636,11 +636,19 @@ def read_and_update_file_yallop():
 
     data.to_csv('Data\\yallop_sighting_data_with_params.csv')
 
+def yallop_to_binary(q_values):
+    quantified_q = np.empty((q_values.size),dtype=str)
+    quantified_q[q_values > 0.216] = "Seen" #A Easily visible
+    quantified_q[np.logical_and(0.216 >= q_values, q_values > -0.014)] = "Seen" #B Visible under perfect conditions
+    quantified_q[np.logical_and(-0.014 >= q_values, q_values > -0.160)] = "Seen" #C May need optical aid to find crescent
+    quantified_q[np.logical_and(-0.160 >= q_values, q_values > -0.232)] = "Not_seen" #D Will need optical aid to find crescent
+    quantified_q[np.logical_and(-0.232 >= q_values, q_values > -0.293)] = "Not_seen" #E Not visible with a telescope ARCL ≤ 8·5°
+    quantified_q[-0.293 >= q_values] = "Not_seen" #F Not visible, below Danjon limit, ARCL ≤ 8°
+    return quantified_q
 
 def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
     num_of_rows = no_of_points*no_of_points
-
     data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols[0:-5])
     data.index.name="Index"
 
@@ -653,8 +661,14 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
         lap = time.time()
         print(f"Calculating latitude {round(lat_arr[i],2)} at time={round(lap-start,2)}s")
         for j, longitude in enumerate(lon_arr):
-            data.loc[position] = get_moon_params(date,latitude,longitude,True)
+            params = get_moon_params(date,latitude,longitude,True)
+            data.loc[position] = params
             position += 1
+
+    #Calculate seen/not seen for q-values
+    q_values = data["q'"].astype("float")
+    quantified_q = yallop_to_binary(q_values)
+    data["Seen"] = quantified_q
         
     data.to_csv(f'Data\\Generated\\{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
 
@@ -670,10 +684,10 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_yallop()
 
-#date_to_use = Time("2023-11-15")
-#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+date_to_use = Time("2023-03-22")
+generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
-date_to_use = Time("2023-03-21") #UK
+date_to_use = Time("2023-03-23") #UK
 generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
 
 # raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
