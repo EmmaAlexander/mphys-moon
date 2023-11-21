@@ -1,0 +1,53 @@
+,Islamic Month,Date,City,State,Country,Obs Time,Cloud Level,Atmosphere,Visibility,V Eye,V Binocular,V Telescope,V CCD
+0,muh43,Sun 08 August 2021 ,كوينين,الوادي,Algeria ,After sunset,clear,hazy,Not Seen,not sought,not sought,not sought,not sought
+1,muh43,Sun 08 August 2021 ,قمار,الوادي,Algeria ,After sunset,partly cloudy,hazy,Not Seen,not seen,not sought,not sought,not sought
+2,muh43,Sun 08 August 2021 ,سدني,New South Wales,Australia ,After sunset,totally cloudy,very hazy,Not Seen,not sought,not sought,not sought,not seen
+3,muh43,Sun 08 August 2021 ,طرابلس,المدينة,Libya ,Before sunset,partly cloudy,hazy,Not Seen,not seen,not seen,not seen,not seen
+4,muh43,Sun 08 August 2021 ,نواكشوط,عرفات,Mauritania ,After sunset,totally cloudy,clear,Not Seen,not seen,not sought,not sought,not sought
+5,muh43,Sun 08 August 2021 ,Muscat,Oman,Oman ,After sunset,clear,hazy,Not Seen,not seen,not sought,not sought,not sought
+6,muh43,Sun 08 August 2021 ,الرياض,الرياض,Saudi Arabia ,After sunset,partly cloudy,very hazy,Not Seen,not seen,not seen,not seen,not sought
+7,muh43,Sun 08 August 2021 ,المدينة المنورة ,المدينة المنورة ,Saudi Arabia ,After sunset,partly cloudy,clear,Not Seen,not seen,not seen,not sought,not sought
+8,muh43,Sun 08 August 2021 ,المهدية,المهدية,Tunisia ,After sunset,partly cloudy,hazy,Not Seen,not sought,not seen,not sought,not sought
+9,muh43,Sun 08 August 2021 ,Tucson,Arizona,United States ,After sunset,partly cloudy,hazy,Seen,not sought,not seen,seen,not sought
+10,muh43,Mon 09 August 2021 ,كوينين,الوادي,Algeria ,After sunset,clear,hazy,Seen,seen,seen,seen,not sought
+11,muh43,Mon 09 August 2021 ,القرارة,غرداية,Algeria ,After sunset,clear,clear,Seen,seen,not sought,not sought,not sought
+12,muh43,Mon 09 August 2021 ,تافيلالت,غرداية,Algeria ,After sunset,partly cloudy,hazy,Seen,seen,not sought,not sought,not sought
+13,muh43,Mon 09 August 2021 ,الكويف,تبسة,Algeria ,After sunset,partly cloudy,very hazy,Seen,seen,not sought,not sought,not seen
+14,muh43,Mon 09 August 2021 ,عيسى,الجنوبية,Bahrain ,Before sunset,clear,clear,Photographed,not sought,not sought,not sought,seen
+15,muh43,Mon 09 August 2021 ,Dhaka,Dhaka,Bangladesh ,After sunset,totally cloudy,clear,Not Seen,not seen,not sought,not sought,not sought
+16,muh43,Mon 09 August 2021 ,Sarajevo,Bosna anHercegovina,Bosnia and Herzegovina ,After sunset,partly cloudy,clear,Seen,not seen,seen,not sought,not sought
+17,muh43,Mon 09 August 2021 ,Kuala Tutong,Tutong,Brunei Darussalam ,After sunset,partly cloudy,clear,Seen,seen,not sought,seen,seen
+18,muh43,Mon 09 August 2021 ,القاهرة,القاهرة,Egypt ,After sunset,clear,clear,Not Seen,not seen,not sought,not sought,not sought
+19,muh43,Mon 09 August 2021 ,Moerlenbach,Hessen,Germany ,After sunset,partly cloudy,hazy,Seen,seen,seen,not sought,not sought
+20,muh43,Mon 09 August 2021 ,Medan,OIF UMSU,Indonesia ,After sunset,partly cloudy,hazy,Not Seen,not sought,not sought,not sought,not sought
+21,muh43,Mon 09 August 2021 ,Surakarta,Central Java,Indonesia ,After sunset,partly cloudy,hazy,Photographed,not seen,not seen,not seen,seen
+22,muh43,Mon 09 August 2021 ,Surakarta,Central Java,Indonesia ,Before sunset,partly cloudy,hazy,Photographed,not seen,not seen,not seen,seen
+23,muh43,Mon 09 August 2021 ,Shahreza,Isfahan,Iran ,After sunset,partly cloudy,hazy,Seen,seen,seen,not sought,not sought
+24,muh43,Mon 09 August 2021 ,مدينة الصدر ,بغداد,Iraq ,After sunset,clear,clear,Seen,seen,seen,not sought,not sought
+25,muh43,Mon 09 August 2021 ,Amman,Amman,Jordan ,After sunset,clear,clear,Seen,seen,not sought,not sought,not sought
+26,muh43,Mon 09 August 2021 ,ابو نصير,عمان,Jordan ,After sunset,clear,hazy,Seen,seen,not sought,not sought,not sought
+27,muh43,Mon 09 August 2021 ,"Telok Kemang Observatory, Port Dickson",Negeri Sembilan,Malaysia ,After sunset,partly cloudy,hazy,Seen,not seen,not seen,seen,seen
+28,muh43,Mon 09 August 2021 ,نواكشوط,عرفات,Mauritania ,After sunset,clear,hazy,Seen by others,seen,not sought,not sought,not sought
+29,muh43,Mon 09 August 2021 ,بنسليمان ,بنسليمان,Morocco ,After sunset,partly cloudy,clear,Seen,seen,not sought,not sought,not sought
+30,muh43,Mon 09 August 2021 ,ديربلوط,سلفيت,Palestine ,After sunset,partly cloudy,clear,Seen,seen,not sought,not sought,not sought
+31,muh43,Mon 09 August 2021 ,المدينة المنورة ,المدينة المنورة ,Saudi Arabia ,After sunset,partly cloudy,clear,Seen,not seen,seen,not sought,not sought
+32,muh43,Mon 09 August 2021 ,Daressalaam,Tanzania,Tanzania ,After sunset,partly cloudy,hazy,Seen,seen,seen,not sought,not sought
+33,muh43,Mon 09 August 2021 ,المهدية,المهدية,Tunisia ,After sunset,clear,clear,Seen,seen,not sought,not sought,not sought
+34,muh43,Mon 09 August 2021 ,Abu Dhabi,Abu Dhabi,United Arab Emirates ,Before sunset,clear,hazy,Photographed,not sought,not sought,not sought,seen
+35,muh43,Mon 09 August 2021 ,الإمارات ,دبي,United Arab Emirates ,After sunset,partly cloudy,hazy,Not Seen,not seen,not sought,not sought,not sought
+36,muh43,Mon 09 August 2021 ,York,North Yorkshire,United Kingdom ,After sunset,partly cloudy,hazy,Not Seen,not seen,not seen,not seen,not sought
+37,muh43,Mon 09 August 2021 ,Blacksburg,Virginia,United States ,After sunset,partly cloudy,very hazy,Seen,seen,seen,not sought,not sought
+38,muh43,Sat 07 August 2021 ,الكويف,تبسة,Algeria ,Before sunrise,clear,clear,Seen,seen,not sought,not sought,seen
+39,muh43,Sat 07 August 2021 ,كوينين,الوادي,Algeria ,Before sunrise,clear,superb,Seen,seen,not sought,not sought,not sought
+40,muh43,Sat 07 August 2021 ,Surakarta,Central Java,Indonesia ,Before sunrise,clear,clear,Seen,seen,seen,seen,seen
+41,muh43,Sat 07 August 2021 ,Surakarta,Central Java,Indonesia ,After sunrise,partly cloudy,clear,Photographed,not seen,not seen,not seen,seen
+42,muh43,Sat 07 August 2021 ,عمان,عمان,Jordan ,Before sunrise,clear,superb,Seen,seen,not sought,not sought,seen
+43,muh43,Sat 07 August 2021 ,العبدلي,عمان,Jordan ,Before sunrise,clear,clear,Seen,seen,not sought,not sought,not sought
+44,muh43,Sat 07 August 2021 ,ديربلوط,سلفيت,Palestine ,Before sunrise,clear,clear,Not Seen,not seen,not sought,not sought,not sought
+45,muh43,Sat 07 August 2021 ,المدينة المنورة,المدينة المنورة,Saudi Arabia ,Before sunrise,partly cloudy,hazy,Seen,seen,seen,not sought,not sought
+46,muh43,Sat 07 August 2021 ,الرياض,الرياض,Saudi Arabia ,Before sunrise,clear,clear,Seen,seen,not sought,not sought,not sought
+47,muh43,Sat 07 August 2021 ,الإمارات ,دبي,United Arab Emirates ,Before sunrise,clear,clear,Seen,seen,not sought,seen,not sought
+48,muh43,Sat 07 August 2021 ,دبي,دبي,United Arab Emirates ,Before sunrise,partly cloudy,hazy,Seen,seen,not sought,seen,seen
+49,muh43,Sun 08 August 2021 ,Surakarta,Central Java,Indonesia ,After sunrise,partly cloudy,hazy,Photographed,not seen,not sought,not seen,seen
+50,muh43,Sun 08 August 2021 ,ديربلوط,سلفيت,Palestine ,Before sunrise,partly cloudy,very hazy,Not Seen,not seen,not sought,not sought,not sought
+51,muh43,Sun 08 August 2021 ,المدينة المنورة,المدينة المنورة,Palestine ,Before sunrise,clear,hazy,Not Seen,not seen,not seen,not sought,not sought

@@ -8,26 +8,26 @@ import random
 
 years_to_search = [41,42,43,44,45]
 islamic_months = ["muh","saf","raa","rat","jua","jut","raj","sha","ram","shw","kea","hej"]
-last_recorded = "shw41"
-current = "jua45"
-month_to_search = "jua45"
 
 def scrape_data(month_to_search):
 
-    url = "https://www.astronomycenter.net/icop/"+month_to_search+".html"
+    url = "https://www.astronomycenter.net/icop/"+month_to_search+".html?l=en"
+    print(month_to_search)
 
     headers = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Encoding" : "gzip, deflate, br",
     "Accept-Language" : "en-GB,en;q=0.9",
     "Cache-Control" : "max-age=0",
-    "Cookie" : "ASP.NET_SessionId=skottm30rlapyeln5m1mrgq2; lang=en; _gid=GA1.2.809394619.1700578346; _ga=GA1.2.421384393.1700578346; _ga_1LJHW8NDRE=GS1.1.1700578345.1.1.1700579677.47.0.0",
+    "Cookie" : "lang=en;",
     "Dnt" : "1",
     "Referer" : "https://www.astronomycenter.net/res.html",
     "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
     }
-    response = requests.get(url, headers =headers)
+    cookies = {"lang": "en"}
+    response = requests.get(url, headers =headers, cookies=cookies)
     print(response.status_code)
+
     soup = BeautifulSoup(response.text, 'html.parser')
 
     table = soup.find('div', class_ = 'container obs')
@@ -67,11 +67,11 @@ def scrape_data(month_to_search):
 
     cities = re.findall("(?<=from )(.*?)(?= City)",table)
     states = re.findall("(?<=City in )(.*?)(?= State)",table)
-    cloud_levels = re.findall("(?<=the sky was )(.*?)(?=,)",table)
-    atmospheres = re.findall("(?<=atmospheric condition was )(.*?)(?=,)",table)
-    v_eye = re.findall("(?<=the crescent was )(.*?)(?= by naked eye)",table)
-    v_bino = re.findall("(?<=naked eye, the crescent was )(.*?)(?= by binocular)",table)
-    v_telescope = re.findall("(?<=binocular, the crescent was )(.*?)(?= by telescope)",table)
+    cloud_levels = re.findall("(?<=the sky was )(.*?)(?=, the atmospheric condition)",table)
+    atmospheres = re.findall("(?<=atmospheric condition was )(.*?)(?=, the crescent)",table)
+    v_eye = re.findall("(?<=the crescent was )(.*?)(?= by naked eye,)",table)
+    v_bino = re.findall("(?<=naked eye, the crescent was )(.*?)(?= by binocular,)",table)
+    v_telescope = re.findall("(?<=binocular, the crescent was )(.*?)(?= by telescope,)",table)
     v_ccd = re.findall("(?<=telescope, the crescent was )(.*?)(?= by CCD Imaging)",table)
     islamic_dates = np.full(len(countries), month_to_search)
 
@@ -89,8 +89,22 @@ def scrape_data(month_to_search):
                             "V Telescope": v_telescope ,
                             "V CCD": v_ccd }
     data = pd.DataFrame(initial_data)
-    data.to_csv("..\\Data\\ICOP Updated\\"+month_to_search+".csv")
+    data.to_csv("Data\\ICOP Updated\\"+month_to_search+".csv")
 
+def run_batch():
+    for year in years_to_search:
+        if year == 41:
+            search_months = ["kea","hej"]
+        elif year == 45:
+            search_months = ["muh","saf","raa","rat","jua"]
+        else:
+            search_months = islamic_months
+        for month in search_months:
+            month_to_search = month+str(year)
+            scrape_data(month_to_search)
+            time.sleep(2+random.randint(1,3))
+
+total = 0
 for year in years_to_search:
     if year == 41:
         search_months = ["kea","hej"]
@@ -100,5 +114,12 @@ for year in years_to_search:
         search_months = islamic_months
     for month in search_months:
         month_to_search = month+str(year)
-        scrape_data(month_to_search)
-        time.sleep(2+random.randint(1,3))
+        print(month_to_search)
+        d = pd.read_csv("Data\\ICOP Updated\\"+month_to_search+".csv")
+        total+= d.shape[0]
+print(total)
+
+
+
+#https://geopy.readthedocs.io/en/stable/#usage-with-pandas
+#geolocator.reverse(','.join(fields[1:3]), language='en')
