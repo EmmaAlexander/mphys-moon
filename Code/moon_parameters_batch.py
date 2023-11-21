@@ -601,7 +601,6 @@ def read_and_update_file_allawi():
     data["Source"] = np.full(data.shape[0],"SCHAEFER/ODEH")
     data.to_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 
-
 def read_and_update_file_yallop():
     data_file = 'Data\\yallop_sighting_data.csv'
     raw_data = pd.read_csv(data_file)
@@ -685,9 +684,9 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 #read_and_update_file_yallop()
 
 date_to_use = Time("2023-03-22")
-generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
-date_to_use = Time("2023-03-23") #UK
+date_to_use = Time("2023-03-22") #UK
 generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
 
 # raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
