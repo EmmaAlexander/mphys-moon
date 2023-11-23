@@ -291,11 +291,9 @@ def cloud_replace(cloud_text):
         return 0
     elif cloud_text == "rainy":
         return 0.5
-    elif cloud_text == "partly_cloudy":
+    elif cloud_text == "partly_cloudy" or cloud_text == "partly cloudy":
         return 0.5
-    elif cloud_text == "partly cloudy":
-        return 0.75
-    elif cloud_text == "totally_cloudy":
+    elif cloud_text == "totally_cloudy" or cloud_text == "totally cloudy":
         return 1
     else:
         print(f"Error with {cloud_text}")
@@ -470,7 +468,6 @@ def select_means_alrefay(means):
     else:
         return "Not_seen"
 
-
 def select_method_alrefay(means):
     means = means.strip()
     if means == "N":
@@ -635,6 +632,65 @@ def read_and_update_file_yallop():
 
     data.to_csv('Data\\yallop_sighting_data_with_params.csv')
 
+def select_seen_ICOP23(row_seene,row_seenb,row_seent,row_seenc):
+    if row_seene == "seen":
+        return "Seen"
+    elif row_seenb == "seen":
+        return "Seen"
+    elif row_seent == "seen":
+        return "Seen"
+    elif row_seenc == "seen":
+        return "Seen"
+    else:
+        return "Not_seen"
+
+def select_method_ICOP23(row_seene,row_seenb,row_seent,row_seenc):
+    if row_seene == "seen":
+        return "Seen_eye"
+    elif row_seenb == "seen":
+        return "Seen_binoculars"
+    elif row_seent == "seen":
+        return "Seen_telescope"
+    elif row_seenc == "seen":
+        return "Seen_ccd"
+    else:
+        return "Not_seen"
+
+
+def read_and_update_file_ICOP23():
+    data_file = 'Data\\icop2023_sighting_data.csv'
+    raw_data = pd.read_csv(data_file)
+
+    num_of_rows = raw_data.shape[0]
+
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols)
+    data.index.name="Index"
+    for i, row in raw_data.iterrows():
+        row_date = Time(datetime.strptime(row["Date"], "%a %d %B %Y "))
+        row_lat = float(row["Latitude"])
+        row_lon = float(row["Longitude"])
+        row_seene = row["V Eye"]
+        row_seenb = row["V Binocular"]
+        row_seent = row["V Telescope"]
+        row_seenc = row["V CCD"]
+        row_seen = select_seen_ICOP23(row_seene,row_seenb,row_seent,row_seenc)
+        row_method = select_method_ICOP23(row_seene,row_seenb,row_seent,row_seenc)
+        row_methods = select_method_array(row_method)
+        row_vis = select_visibility_number(row_method)
+        row_cloud = cloud_replace(row["Cloud Level"])
+
+        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        new_data = get_moon_params(row_date,row_lat,row_lon)
+
+        row_to_add = np.hstack((new_data,existing_data))
+        data.loc[i] = row_to_add
+
+        if i % 100 == 0:
+            print(f"Generating row {i}")
+
+    data["Source"] = np.full(data.shape[0],"ICOP23")
+    data.to_csv('Data\\icop2023_sighting_data_with_params.csv')
+
 def yallop_to_binary(q_values):
     quantified_q = np.empty((q_values.size),dtype=str)
     quantified_q[q_values > 0.216] = "Seen" #A Easily visible
@@ -683,11 +739,13 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
 #read_and_update_file_yallop()
 
+#read_and_update_file_ICOP23()
+
 date_to_use = Time("2023-03-22")
 #generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
 date_to_use = Time("2023-03-22") #UK
-generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
+#generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
 
 # raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 # raw_data["Date"] = Time(raw_data["Date"],format="jd").to_datetime()

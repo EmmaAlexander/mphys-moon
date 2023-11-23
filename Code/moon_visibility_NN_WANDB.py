@@ -18,26 +18,26 @@ wandb.login()
 sweep_config = {
     "method": "bayes", # try grid or random
     "metric": {
-      "name": "test loss",
-      "goal": "minimize"   
+      "name": "AUC score",
+      "goal": "maximize"   
     },
     "parameters": {
         "batch_size": {
             'distribution': 'int_uniform',
             #'q': 2,
-            'min': 32,
-            'max': 256,
+            'min': 10, #32
+            'max': 70, #256
         },
         "hidden_size": {
             'distribution': 'int_uniform',
             #'q': 2,
-            'min': 4,
-            'max': 32,
+            'min': 24, #4
+            'max': 32, #32
         },
         "num_epochs": {
             'distribution': 'int_uniform',
-            'min': 50,
-            'max': 300,
+            'min': 200, #50
+            'max': 300, #300
         },
         "learning_rate": {
             'distribution': 'uniform',
@@ -47,7 +47,7 @@ sweep_config = {
         "weight_decay": {
             'distribution': 'uniform',
             'min': 0,
-            'max': 0.1
+            'max': 0.04 #0.1
         },
         "layer_num": {
             'values': [1, 2, 3]

@@ -63,7 +63,6 @@ def cloud_extract(date, lon, lat):
 
     cloud_for_point = cloud_level[np.where(np.in1d(code, closest_code))[0][0]]
     return int(cloud_for_point), float(distance)
-    #return pd.Series([int(cloud_for_point), float(distance)], index=['Cloud cover', 'Distance'])
 
 def pandas_cloud(df):
     print(df['Index'])
@@ -71,5 +70,4 @@ def pandas_cloud(df):
 
 df['Cloud cover'], df['Distance'] = zip(*df.apply(pandas_cloud, axis=1))
 df = df[df['Cloud cover'] >= 0]
-print(df)
-df.to_csv('cloudtest.csv', index=False)
+df.to_csv('..\\Data\\cloudtest.csv', index=False)
