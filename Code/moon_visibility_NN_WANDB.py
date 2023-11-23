@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -59,6 +60,7 @@ PARAMS = {'batch_size': 32, 'hidden_size': 32, 'num_epochs': 200, 'learning_rate
 METHOD = False
 USE_GPU = False
 LINUX = False
+WEATHER = False
 
 if USE_GPU:
     #torch.zeros(1).cuda()
@@ -72,31 +74,34 @@ if USE_GPU:
 else:
     device = torch.device('cpu')
 
-icouk_data_file = '..\\Data\\icouk_sighting_data_with_params.csv'
-icop_data_file = '..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv'
-alrefay_data_file = '..\\Data\\alrefay_2018_sighting_data_with_params.csv'
-allawi_data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
-yallop_data_file = '..\\Data\\Data/yallop_sighting_data_with_params.csv'
+if WEATHER:
+    icouk_data_weather = 'Data\\cloudtest.csv'
+    data = pd.read_csv(icouk_data_weather)
+    data=data.drop(['Cloud Level','Distance'], axis = 1)
+else:
+    icouk_data_file = 'Data\\icouk_sighting_data_with_params.csv'
+    icop_data_file = 'Data\\icop_ahmed_2020_sighting_data_with_params.csv'
+    alrefay_data_file = 'Data\\alrefay_2018_sighting_data_with_params.csv'
+    allawi_data_file = 'Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
+    yallop_data_file = 'Data\\yallop_sighting_data_with_params.csv'
 
-if LINUX:
-    icouk_data_file = '../Data/icouk_sighting_data_with_params.csv'
-    icop_data_file = '../Data/icop_ahmed_2020_sighting_data_with_params.csv'
-    alrefay_data_file = '../Data/alrefay_2018_sighting_data_with_params.csv'
-    allawi_data_file = '../Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
-    yallop_data_file = '../Data/yallop_sighting_data_with_params.csv'
+    if LINUX:
+        icouk_data_file = '../Data/icouk_sighting_data_with_params.csv'
+        icop_data_file = '../Data/icop_ahmed_2020_sighting_data_with_params.csv'
+        alrefay_data_file = '../Data/alrefay_2018_sighting_data_with_params.csv'
+        allawi_data_file = '../Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
+        yallop_data_file = '../Data/yallop_sighting_data_with_params.csv'
 
-icouk_data = pd.read_csv(icouk_data_file)
-icop_data = pd.read_csv(icop_data_file)
-alrefay_data = pd.read_csv(alrefay_data_file)
-allawi_data = pd.read_csv(allawi_data_file)
-yallop_data = pd.read_csv(yallop_data_file)
+    icouk_data = pd.read_csv(icouk_data_file)
+    icop_data = pd.read_csv(icop_data_file)
+    alrefay_data = pd.read_csv(alrefay_data_file)
+    allawi_data = pd.read_csv(allawi_data_file)
+    yallop_data = pd.read_csv(yallop_data_file)
 
 
-data = pd.concat([icouk_data,icop_data,alrefay_data,yallop_data])
+    data = pd.concat([icouk_data,icop_data,alrefay_data,yallop_data])
 
-#print(f"Loaded {data.shape[0]} rows")
-
-data = data.drop(["Index","q","W","q'","W'",'Visibility'], axis = 1)
+data = data.drop(["Index","q","W","q'","W'",'Visibility','Source'], axis = 1)
 
 if METHOD: # method and methods columns, will be changed
     data = data.drop('Seen', axis = 1) # replaced by method column
@@ -110,7 +115,7 @@ else:
     # List of label options
     ptype = [r"Seen", r"Not_seen"]
 
-print(f"Selected {data.shape[0]} rows")
+#print(f"Selected {data.shape[0]} rows")
 
 variable_list =  data.columns.tolist()
 variable_list.remove('Seen')
@@ -225,18 +230,22 @@ def sweep_train():
             test_loss /= len(testloader.dataset)
             accuracy = correct / len(testloader.dataset)
 
-        return test_loss, accuracy
+            roc_auc = roc_auc_score(labels, preds)
+
+        return test_loss, accuracy, roc_auc
 
     for epoch in range(num_epochs):  # loop over the dataset multiple times
         
         train_loss = train(model, train_loader, optimizer, device)
-        test_loss, accuracy = test(model, test_loader, device)
+        test_loss, accuracy, roc_auc = test(model, test_loader, device)
             
         scheduler.step(test_loss)
     ###################################################################################################################
-        wandb.log({'accuracy':accuracy,'train loss':train_loss,'test loss':test_loss})
-        #results = [epoch, train_loss, test_loss, accuracy]
+        wandb.log({'accuracy':accuracy,'train loss':train_loss,'test loss':test_loss,'AUC score':roc_auc})
+        # results = [epoch, train_loss, test_loss, accuracy]
+        # print(results)
 
 sweep_id = wandb.sweep(sweep_config, project="moon_visibility_NN_WANDB")
 wandb.agent(sweep_id, sweep_train)
 wandb.finish()
+#sweep_train()

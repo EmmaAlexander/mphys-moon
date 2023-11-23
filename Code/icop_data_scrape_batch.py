@@ -163,7 +163,7 @@ def get_locations():
 #get_locations()
 
 def find_not_found():
-        data = pd.read_csv("Data\\icop2023_sighting_data_original2.csv")
+        data = pd.read_csv("Data\\icop2023_sighting_data_original.csv")
         missing_data = data[data['Location']=='Not found']
         print(f"{missing_data.shape[0]} out of {data.shape[0]}")
         print(f"{missing_data['Orig Location'].unique().shape[0]} unique out of {data.shape[0]}")
@@ -176,20 +176,26 @@ find_not_found()
 
 
 def replace_not_found():
-        data = pd.read_csv("Data\\icop2023_sighting_data_original.csv")
+        data = pd.read_csv("Data\\icop2023_sighting_data_original_old.csv")
         replacement =  pd.read_csv("Data\\icop2023_sighting_data_replace2.csv",index_col=0,sep=',',encoding = "utf-8")
-        data.loc[data['Location']=='Not found','Longitude'] = replacement["Longitude"]
-        data.loc[data['Location']=='Not found','Latitude'] = replacement["Latitude"]
-        data.loc[data['Location']=='Not found','Location'] = replacement["Location"]
+        missing_names = data[data['Location']=='Not found']['Orig Location'].unique()
+        replacement["Orig Location"] = missing_names
+        print(replacement.head(6))
+        print(data[data['Location']=='Not found'][0:6])
 
-        #Code to generate unique missing locations - do not use as will replace missing file
-        #data.to_csv("Data\\icop2023_sighting_data_original.csv")
-        #missing_data_reduced = missing_data['Orig Location']
-        #missing_data_reduced = pd.DataFrame(missing_data_reduced.unique())
-        #missing_data_reduced.to_csv("Data\\icop2023_sighting_data_missing.csv")
+        merged = data.merge(replacement, on='Orig Location', suffixes=('_A', '_B'), how='left')
+        mask = merged['Location_A'] == 'Not found'
+        data.loc[mask, ['Location', 'Latitude', 'Longitude']] = merged[mask][['Location_B', 'Latitude_B', 'Longitude_B']].values
 
-        #replacement =  pd.read_csv("Data\\icop2023_sighting_data_replace.csv",index_col=0,sep=',',encoding = "utf-8")
-        #replacement_locs = replacement["New"].apply(get_location)
-        #replacement_locs.to_csv("Data\\icop2023_sighting_data_replace2.csv")
-        data.to_csv("Data\\icop2023_sighting_data_original2.csv",index=False)
-#replace_not_found()
+        # data.loc[data['Location']=='Not found','Longitude'] = replacement["Longitude"]
+        # data.loc[data['Location']=='Not found','Latitude'] = replacement["Latitude"]
+        # data.loc[data['Location']=='Not found','Location'] = replacement["Location"]
+
+        # #replacement =  pd.read_csv("Data\\icop2023_sighting_data_missing.csv",index_col=0,sep=',',encoding = "utf-8")
+        # #replacement_locs = replacement["New"].apply(get_location)
+        # #replacement_locs.to_csv("Data\\icop2023_sighting_data_replace2.csv")
+        print(data.shape[0])
+        data = data[data['Location']!='Not found']
+        print(data.shape[0])
+        data.to_csv("Data\\icop2023_sighting_data_original.csv",index=False)
+replace_not_found()

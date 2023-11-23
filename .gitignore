@@ -5,3 +5,4 @@ Code/Globes/
 Code/.ipynb_checkpoints/
 *.bsp
 .DS_Store
+wandb/
