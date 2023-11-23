@@ -5,6 +5,10 @@ import re
 import pandas as pd
 import time
 import random
+from geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent="mphys-moon")
+from geopy.extra.rate_limiter import RateLimiter
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
 
 years_to_search = [41,42,43,44,45]
 islamic_months = ["muh","saf","raa","rat","jua","jut","raj","sha","ram","shw","kea","hej"]
@@ -104,22 +108,89 @@ def run_batch():
             scrape_data(month_to_search)
             time.sleep(2+random.randint(1,3))
 
-total = 0
-for year in years_to_search:
-    if year == 41:
-        search_months = ["kea","hej"]
-    elif year == 45:
-        search_months = ["muh","saf","raa","rat","jua"]
+def combine_batch():
+    cols = ["Islamic Month","Date","City","State","Country","Obs Time","Cloud Level","Atmosphere" ,"Visibility","V Eye","V Binocular" ,"V Telescope" ,"V CCD"]
+    data = pd.DataFrame(columns=cols)
+    total = 0
+    for year in years_to_search:
+        if year == 41:
+            search_months = ["kea","hej"]
+        elif year == 45:
+            search_months = ["muh","saf","raa","rat","jua"]
+        else:
+            search_months = islamic_months
+        for month in search_months:
+            month_to_search = month+str(year)
+            print(month_to_search)
+            
+            d = pd.read_csv("Data\\ICOP Updated\\"+month_to_search+".csv")
+            total+=d.shape[0]
+            data = pd.concat([data,d])
+    data.index.name = "Index"
+    data = data[cols]
+    data.to_csv("Data\\ICOP Updated\\icop2023_sighting_data_combined.csv")
+    print(total)
+
+def get_location(locname):
+    loc = geocode(locname,language="en")
+    if loc is None:
+        adr = "Not found"
+        lat = 0
+        lon = 0
     else:
-        search_months = islamic_months
-    for month in search_months:
-        month_to_search = month+str(year)
-        print(month_to_search)
-        d = pd.read_csv("Data\\ICOP Updated\\"+month_to_search+".csv")
-        total+= d.shape[0]
-print(total)
+        adr = loc.address
+        lat = loc.latitude
+        lon = loc.longitude
+    print(adr,lat,lon)
+    return pd.Series([adr,lat,lon],index = ["Location", "Latitude", "Longitude"])
+
+def get_locations():
+    data = pd.read_csv("Data\\ICOP Updated\\icop2023_sighting_data_combined.csv",index_col=0)
+    #data = data.head(5)
+
+    data["Orig Location"] = data["City"] +"," +data["State"] +"," +data["Country"].str.strip()
+    data["Orig Location"] = data["Orig Location"].str.strip("\"")
+    location_data = data["Orig Location"].apply(get_location)
+    data['Location'] = location_data["Location"]
+    data['Latitude'] = location_data["Latitude"]
+    data['Longitude'] = location_data["Longitude"]
+
+    #df['point'] = df['location'].apply(lambda loc: tuple(loc.point) if loc else None)
+    cols = ["Islamic Month","Date","Orig Location","Location","Latitude","Longitude","Obs Time","Cloud Level","Atmosphere" ,"Visibility","V Eye","V Binocular" ,"V Telescope" ,"V CCD"]
+    data = data[cols]
+    data.to_csv("Data\\icop2023_sighting_data_original.csv",index=False)
+#combine_batch()
+#get_locations()
+
+def find_not_found():
+        data = pd.read_csv("Data\\icop2023_sighting_data_original.csv")
+        missing_data = data[data['Location']=='Not found']
+        print(f"{missing_data.shape[0]} out of {data.shape[0]}")
+        print(f"{missing_data['Orig Location'].unique().shape[0]} unique out of {data.shape[0]}")
+        #Code to generate unique missing locations - do not use as will replace missing file
+        #data.to_csv("Data\\icop2023_sighting_data_original.csv")
+        #missing_data_reduced = missing_data['Orig Location']
+        #missing_data_reduced = pd.DataFrame(missing_data_reduced.unique())
+        #missing_data_reduced.to_csv("Data\\icop2023_sighting_data_missing.csv")
+
+        replacement =  pd.read_csv("Data\\icop2023_sighting_data_missing.csv")
+        replacement_locs = replacement["New"].apply(get_location)
+        replacement_locs.to_csv("Data\\icop2023_sighting_data_replace.csv")
+find_not_found()
 
 
+def find_not_found():
+        data = pd.read_csv("Data\\icop2023_sighting_data_original.csv")
+        missing_data = data[data['Location']=='Not found']
+        print(f"{missing_data.shape[0]} out of {data.shape[0]}")
+        print(f"{missing_data['Orig Location'].unique().shape[0]} unique out of {data.shape[0]}")
+        #Code to generate unique missing locations - do not use as will replace missing file
+        #data.to_csv("Data\\icop2023_sighting_data_original.csv")
+        #missing_data_reduced = missing_data['Orig Location']
+        #missing_data_reduced = pd.DataFrame(missing_data_reduced.unique())
+        #missing_data_reduced.to_csv("Data\\icop2023_sighting_data_missing.csv")
 
-#https://geopy.readthedocs.io/en/stable/#usage-with-pandas
-#geolocator.reverse(','.join(fields[1:3]), language='en')
+        replacement =  pd.read_csv("Data\\icop2023_sighting_data_missing.csv")
+        replacement_locs = replacement["New"].apply(get_location)
+        replacement_locs.to_csv("Data\\icop2023_sighting_data_replace.csv")
+find_not_found()
