@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-import pycountry as pc
+import pycountry_convert as pc
 from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="mphys-moon")
 from geopy.extra.rate_limiter import RateLimiter
@@ -37,7 +37,8 @@ def switch(cont_code):
 def continent_get(lon, lat):
     search_result = geocode((lat,lon))
     country_code = search_result.raw['address']['country_code']
-    
+    country_code = country_code.upper()
+
     if country_code=="UK" or country_code=="GB":
         return "ukuk&LAND=UK&KEY=UK"
     if country_code=="ca":#add several centeral american countries
@@ -50,7 +51,6 @@ def cloud_extract(date, lon, lat):
     # get UNIX date
     best_time = Time(date, format='jd') #best time in julian
     DATE = str(int(np.round(best_time.unix/60/30)*60*30)) #convert julian date to UNIX timestamp rounded to half hour
-
     if (int(DATE)<1612137600): # before accurate data
         return -1, -1
 
@@ -89,18 +89,22 @@ def cloud_extract(date, lon, lat):
     day = best_time.to_datetime()
     #get 50 nearby stations
     stations = Stations().nearby(lat,lon)
-    station = stations.fetch(25)
+    station = stations.fetch(50)
+    print(names)
+    print(station)
 
     #get the closest thats also online
-    first_agree_index = np.where(np.in1d(station.index, code))[0][0]
-    closest_code = station.iloc[[first_agree_index]].index
-    distance = station['distance'][first_agree_index]
+    first_agree_index = np.where(np.in1d(station.index, code))[0]
+    if len(first_agree_index) == 0:
+        return -4, -4
+    closest_code = station.iloc[[first_agree_index[0]]].index
+    distance = station['distance'][first_agree_index[0]]
 
     cloud_for_point = cloud_level[np.where(np.in1d(code, closest_code))[0][0]]
     return int(cloud_for_point), float(distance)
 
 def pandas_cloud(df):
-    #print(df['Index'])
+    print(df['Index'])
     return cloud_extract(df['Date'],df['Longitude'],df['Latitude'])
 
 def main():
@@ -109,12 +113,12 @@ def main():
     if LINUX:
         data_file = '../Data/moon_sighting_data.csv'
 
-    data = pd.read_csv(data_file, encoding="utf-8")
-    df = data[data["Source"]=="ICOUK"]
+    df = pd.read_csv(data_file, encoding="utf-8")
+    df = df[df["Source"]=="ICOP23"]
 
     df['Cloud cover'], df['Distance'] = zip(*df.apply(pandas_cloud, axis=1))
-    df = df[df['Cloud cover'] >= 0]
-    df.to_csv('..\\Data\\cloudtest.csv', index=False)
+    #df = df[df['Cloud cover'] >= 0]
+    df.to_csv('cloudtestICOP.csv', index=False)
     return 0
 
 main()

@@ -763,10 +763,15 @@ def combine_files():
 combine_files()
 
 date_to_use = Time("2023-03-22")
-#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
 
-date_to_use = Time("2023-03-22") #UK
-#generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
+date_to_use = Time("2023-12-13")
+generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+date_to_use = Time("2023-12-14")
+##generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+date_to_use = Time("2023-12-15")
+#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
+date_to_use = Time("2023-12-14") #UK
+generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
 
 # raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
 # raw_data["Date"] = Time(raw_data["Date"],format="jd").to_datetime()
