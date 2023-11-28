@@ -79,27 +79,11 @@ if WEATHER:
     data = pd.read_csv(icouk_data_weather)
     data=data.drop(['Cloud Level','Distance'], axis = 1)
 else:
-    icouk_data_file = 'Data\\icouk_sighting_data_with_params.csv'
-    icop_data_file = 'Data\\icop_ahmed_2020_sighting_data_with_params.csv'
-    alrefay_data_file = 'Data\\alrefay_2018_sighting_data_with_params.csv'
-    allawi_data_file = 'Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
-    yallop_data_file = 'Data\\yallop_sighting_data_with_params.csv'
-
+    data_file = 'Data\\moon_sighting_data.csv'
     if LINUX:
-        icouk_data_file = '../Data/icouk_sighting_data_with_params.csv'
-        icop_data_file = '../Data/icop_ahmed_2020_sighting_data_with_params.csv'
-        alrefay_data_file = '../Data/alrefay_2018_sighting_data_with_params.csv'
-        allawi_data_file = '../Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
-        yallop_data_file = '../Data/yallop_sighting_data_with_params.csv'
+        data_file = 'Data/moon_sighting_data.csv'
 
-    icouk_data = pd.read_csv(icouk_data_file)
-    icop_data = pd.read_csv(icop_data_file)
-    alrefay_data = pd.read_csv(alrefay_data_file)
-    allawi_data = pd.read_csv(allawi_data_file)
-    yallop_data = pd.read_csv(yallop_data_file)
-
-
-    data = pd.concat([icouk_data,icop_data,alrefay_data,yallop_data])
+    data = pd.read_csv(data_file)
 
 data = data.drop(["Index","q","W","q'","W'",'Visibility','Source'], axis = 1)
 

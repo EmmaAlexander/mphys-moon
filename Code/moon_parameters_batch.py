@@ -729,6 +729,25 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 
     print(f"Total time: {round(time.time()-start,2)}s")
 
+def combine_files():
+    icouk_data_file = 'Data\\icouk_sighting_data_with_params.csv'
+    icop_data_file = 'Data\\icop_ahmed_2020_sighting_data_with_params.csv'
+    icop23_data_file = 'Data\\icop2023_sighting_data_with_params.csv'
+    alrefay_data_file = 'Data\\alrefay_2018_sighting_data_with_params.csv'
+    allawi_data_file = 'Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv' #Not currently using
+    yallop_data_file = 'Data\\yallop_sighting_data_with_params.csv'
+
+    icouk_data = pd.read_csv(icouk_data_file)
+    icop_data = pd.read_csv(icop_data_file)
+    icop23_data = pd.read_csv(icop23_data_file)
+    alrefay_data = pd.read_csv(alrefay_data_file)
+    allawi_data=pd.read_csv(allawi_data_file)
+    yallop_data = pd.read_csv(yallop_data_file)
+
+    sources = [icouk_data,icop_data,icop23_data,alrefay_data,yallop_data]
+    data = pd.concat(sources)
+    data.to_csv("Data\\moon_sighting_data.csv")
+
 #read_and_update_file_ICOUK()
 
 #read_and_update_file_ICOP()
@@ -740,6 +759,8 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
 #read_and_update_file_yallop()
 
 #read_and_update_file_ICOP23()
+
+combine_files()
 
 date_to_use = Time("2023-03-22")
 #generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
