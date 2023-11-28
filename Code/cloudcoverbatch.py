@@ -8,10 +8,43 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-
-icouk_data_file = 'Data\\icouk_sighting_data_with_params.csv'
-df = pd.read_csv(icouk_data_file)
+import pycountry as pc
+from geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent="mphys-moon")
+from geopy.extra.rate_limiter import RateLimiter
+geocode = RateLimiter(geolocator.reverse, min_delay_seconds=1)
 #df = df.copy('Deep').tail(10)
+
+def switch(cont_code):
+    #if (cont_code == "UK"): # UK is not a continent so needs adjusting
+    #    return "ukuk&LAND=UK&KEY=UK"
+    if (cont_code == "EU"):
+        return "euro&LAND=__&KEY=__"
+    elif (cont_code == "AF"):
+        return "afri&LAND=__&KEY=__"
+    elif (cont_code == "NA"):
+        return "namk&LAND=__&KEY=__"
+    elif (cont_code == "SA"):
+        return "samk&LAND=__&KEY=__"
+    elif (cont_code == "OC"):
+        return "aupa&LAND=__&KEY=__"
+    elif (cont_code == "AS"):
+        return "asie&LAND=__&KEY=__"
+    elif (cont_code == "AQ"):
+        return "aris&LAND=__&KEY=__"
+
+    
+def continent_get(lon, lat):
+    search_result = geocode((lat,lon))
+    country_code = search_result.raw['address']['country_code']
+    
+    if country_code=="UK" or country_code=="GB":
+        return "ukuk&LAND=UK&KEY=UK"
+    if country_code=="ca":#add several centeral american countries
+        return "mamk&LAND=__&KEY=__"
+    
+    continent_code = pc.country_alpha2_to_continent_code(country_code)
+    return switch(continent_code)
 
 def cloud_extract(date, lon, lat):
     # get UNIX date
@@ -23,7 +56,9 @@ def cloud_extract(date, lon, lat):
 
     #get url and download
     time.sleep(np.random.rand()/100) # sleep so as to not overwhelm the site
-    url = 'https://www.weatheronline.co.uk/weather/maps/current?LANG=en&DATE='+ DATE +'&CONT=ukuk&LAND=UK&KEY=UK&SORT=4&UD=0&INT=06&TYP=bedeckung&ART=tabelle&RUBRIK=akt&R=310&CEL=C&SI=mph'
+    CONT = continent_get(lon, lat)
+
+    url = 'https://www.weatheronline.co.uk/weather/maps/current?LANG=en&DATE='+ DATE +'&CONT='+CONT+'&SORT=4&UD=0&INT=06&TYP=bedeckung&ART=tabelle&RUBRIK=akt&R=310&CEL=C&SI=mph'
     response = requests.get(url)
 
     if (response.status_code!=200): # website not accessed
@@ -54,7 +89,7 @@ def cloud_extract(date, lon, lat):
     day = best_time.to_datetime()
     #get 50 nearby stations
     stations = Stations().nearby(lat,lon)
-    station = stations.fetch(50)
+    station = stations.fetch(25)
 
     #get the closest thats also online
     first_agree_index = np.where(np.in1d(station.index, code))[0][0]
@@ -65,9 +100,21 @@ def cloud_extract(date, lon, lat):
     return int(cloud_for_point), float(distance)
 
 def pandas_cloud(df):
-    print(df['Index'])
+    #print(df['Index'])
     return cloud_extract(df['Date'],df['Longitude'],df['Latitude'])
 
-df['Cloud cover'], df['Distance'] = zip(*df.apply(pandas_cloud, axis=1))
-df = df[df['Cloud cover'] >= 0]
-df.to_csv('..\\Data\\cloudtest.csv', index=False)
+def main():
+    LINUX = False
+    data_file = 'Data\\moon_sighting_data.csv'
+    if LINUX:
+        data_file = '../Data/moon_sighting_data.csv'
+
+    data = pd.read_csv(data_file, encoding="utf-8")
+    df = data[data["Source"]=="ICOUK"]
+
+    df['Cloud cover'], df['Distance'] = zip(*df.apply(pandas_cloud, axis=1))
+    df = df[df['Cloud cover'] >= 0]
+    df.to_csv('..\\Data\\cloudtest.csv', index=False)
+    return 0
+
+main()

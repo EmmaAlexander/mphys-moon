@@ -730,19 +730,19 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
     print(f"Total time: {round(time.time()-start,2)}s")
 
 def combine_files():
-    icouk_data_file = 'Data\\icouk_sighting_data_with_params.csv'
-    icop_data_file = 'Data\\icop_ahmed_2020_sighting_data_with_params.csv'
-    icop23_data_file = 'Data\\icop2023_sighting_data_with_params.csv'
-    alrefay_data_file = 'Data\\alrefay_2018_sighting_data_with_params.csv'
-    allawi_data_file = 'Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv' #Not currently using
-    yallop_data_file = 'Data\\yallop_sighting_data_with_params.csv'
+    icouk_data_file = 'Data\\ICOUK\\icouk_sighting_data_with_params.csv'
+    icop_data_file = 'Data\\ICOP\\icop_ahmed_2020_sighting_data_with_params.csv'
+    icop23_data_file = 'Data\\ICOP23\\icop2023_sighting_data_with_params.csv'
+    alrefay_data_file = 'Data\\Alrefay\\alrefay_2018_sighting_data_with_params.csv'
+    allawi_data_file = 'Data\\Schaefer-Odeh\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv' #Not currently using
+    yallop_data_file = 'Data\\Yallop\\yallop_sighting_data_with_params.csv'
 
-    icouk_data = pd.read_csv(icouk_data_file)
-    icop_data = pd.read_csv(icop_data_file)
-    icop23_data = pd.read_csv(icop23_data_file)
-    alrefay_data = pd.read_csv(alrefay_data_file)
-    allawi_data=pd.read_csv(allawi_data_file)
-    yallop_data = pd.read_csv(yallop_data_file)
+    icouk_data = pd.read_csv(icouk_data_file,index_col=0)
+    icop_data = pd.read_csv(icop_data_file,index_col=0)
+    icop23_data = pd.read_csv(icop23_data_file,index_col=0)
+    alrefay_data = pd.read_csv(alrefay_data_file,index_col=0)
+    allawi_data=pd.read_csv(allawi_data_file,index_col=0)
+    yallop_data = pd.read_csv(yallop_data_file,index_col=0)
 
     sources = [icouk_data,icop_data,icop23_data,alrefay_data,yallop_data]
     data = pd.concat(sources)
