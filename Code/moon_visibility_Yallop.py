@@ -52,7 +52,6 @@ def get_geocentric_parallax(object_position,distance):
     p = np.arcsin((a/r)*np.sin(z.radian))
     return Angle(p)
 
-
 def get_q_value(alt_diff, width):
     #Calculate q-test value using Yallop formula
 
@@ -61,7 +60,6 @@ def get_q_value(alt_diff, width):
     q = (ARCV.deg - (11.8371 - 6.3226*W + 0.7319*W**2 - 0.1018*W**3 )) / 10
 
     return q
-
 
 def get_time_zone(latitude,longitude):
     #Returns an astropy timedelta object with correct UTC offset
@@ -94,7 +92,6 @@ def get_sunset_time_old(obs_date, lat_arr,long_arr):
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
     return sunsets
-
 
 def get_moonset_time(obs_date,lat, lon,moonrise=False):
     #Gets moonset time using skyfield (MEDIUM)
@@ -151,7 +148,6 @@ def get_sunset_time(obs_date,lat, lon,sunrise=False):
         sunset = obs_date
 
     return sunset
-
 
 def get_sunset_moonset(d,coords,display=False): #NOT IN USE
     #Gets sunset and moonset using astroplan (VERY SLOW)
@@ -424,7 +420,6 @@ def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
     #plotter.export_obj(f"Globes\\{title_date} {len(long_arr)}x{len(long_arr)}.obj")
     plotter.show()
 
-
 def create_globe_plot(obs_date,lat_arr,long_array,q_val):
     #Plots moon visibility across a globe
 
@@ -542,21 +537,7 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
 date_to_plot = Time("2023-03-22")
 plot_visibility_at_date(date_to_plot,40)
 
-date_to_check = Time("1987-5-29") #Does not work, best time is 03:25 1987-5-30
-lat = 39.2
-lon = -105.5
-#get_moon_params(date_to_check,lat,lon,display=True)
-
-date_to_check = Time("1990-11-19") #Works, best time is 22:00 1990-11-19
-lat = 39
-lon = -76.8
-#get_moon_params(date_to_check,lat,lon,display=True)
-
 date_to_check = Time("1989-4-4") #Works, best time is 22:00 1990-11-19
 lat = 41.9
 lon = -88.7
 #get_moon_params(date_to_check,lat,lon,display=True)
-
-date_to_check = Time("2023-03-22")
-
-#print(get_moon_age(date_to_check))

@@ -96,8 +96,8 @@ def cloud_extract(date, lon, lat):
     if "03844" in code: #exeter
         code[np.where((code=="03844"))[0]] = "03839"
     
-    if (len(names)<7): #not enough datapoints
-        return -3, -3
+    #if (len(names)<7): #not enough datapoints
+    #    return -3, -3
 
     day = best_time.to_datetime()
     #get 50 nearby stations
@@ -133,7 +133,7 @@ def main():
 
     df['Cloud cover'], df['Distance'] = zip(*df.apply(pandas_cloud, axis=1))
     df = df[df['Cloud cover'] >= 0]
-    df.to_csv('cloud_data.csv', index=False)
+    df.to_csv('cloud_data2.csv', index=False)
     return 0
 
 main()

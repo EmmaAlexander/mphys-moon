@@ -45,7 +45,6 @@ def get_geocentric_parallax(object_position,distance):
     p = np.arcsin((a/r)*np.sin(z.radian))
     return Angle(p)
 
-
 def get_q_value(alt_diff, width):
     #Calculate q-test value using Yallop formula
 
@@ -71,7 +70,6 @@ def get_best_obs_time(sunset, moonset):
     #Bruin best time Tb = (5 Ts +4 Tm)/ 9
     best_time = (1/9)*(5*sunset.to_value("jd")+4*moonset.to_value("jd"))
     return Time(best_time, format="jd")
-
 
 #CALCULATING SUNRISE/SUNSET TIMES----------------------------------------------
 
@@ -326,7 +324,6 @@ def select_visibility_number(method):
         vis = 1
     return vis
 
-
 cols = ["Date",
             "Latitude",
             "Longitude",
@@ -422,7 +419,6 @@ def select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc):
         return "Seen_ccd"
     else:
         return "Not_seen"
-
 
 def read_and_update_file_ICOP():
     data_file = 'Data\\icop_ahmed_2020_sighting_data.csv'
@@ -649,7 +645,6 @@ def select_method_ICOP23(row_seene,row_seenb,row_seent,row_seenc):
         return "Seen_ccd"
     else:
         return "Not_seen"
-
 
 def read_and_update_file_ICOP23():
     data_file = 'Data\\icop2023_sighting_data.csv'
