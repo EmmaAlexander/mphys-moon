@@ -352,8 +352,7 @@ cols = ["Date",
             "Cloud Level",
             "Seen",
             "Method",
-            "Methods",
-            "Visibility"]
+            "Methods"]
 
 def select_method_ICOUK(row_seen,raw_method):
     if row_seen == "Not_seen":
@@ -388,10 +387,9 @@ def read_and_update_file_ICOUK():
         raw_method = row["Method"]
         row_method = select_method_ICOUK(row_seen,raw_method)
         row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
         row_cloud = cloud_replace(row["Clouds"])
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -445,10 +443,9 @@ def read_and_update_file_ICOP():
         row_seen = select_seen_ICOP(row_seene,row_seenb,row_seent)
         row_method = select_method_ICOP(row_seene,row_seenb,row_seent,row_seenc)
         row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
         row_cloud = cloud_replace(row["x_sky"])
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -496,10 +493,9 @@ def read_and_update_file_alrefay():
         row_seen = select_means_alrefay(means)
         row_method = select_method_alrefay(means)
         row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -583,10 +579,9 @@ def read_and_update_file_allawi():
         row_seen = select_vis_schaefer(visibility)
         row_method = select_method_schaefer(visibility)
         row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon,True)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -616,10 +611,9 @@ def read_and_update_file_yallop():
         row_seen = select_vis_schaefer(visibility)
         row_method = select_method_schaefer(visibility)
         row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
         row_cloud = 0
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon,True)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -676,10 +670,9 @@ def read_and_update_file_ICOP23():
         row_seen = select_seen_ICOP23(row_seene,row_seenb,row_seent,row_seenc)
         row_method = select_method_ICOP23(row_seene,row_seenb,row_seent,row_seenc)
         row_methods = select_method_array(row_method)
-        row_vis = select_visibility_number(row_method)
         row_cloud = cloud_replace(row["Cloud Level"])
 
-        existing_data = [row_cloud, row_seen, row_method, row_methods,row_vis]
+        existing_data = [row_cloud, row_seen, row_method, row_methods]
         new_data = get_moon_params(row_date,row_lat,row_lon)
 
         row_to_add = np.hstack((new_data,existing_data))
@@ -724,6 +717,7 @@ def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
     q_values = data["q'"].astype("float")
     quantified_q = yallop_to_binary(q_values)
     data["Seen"] = quantified_q
+    data["Source"] = np.full(data.shape[0],"GENERATED")
         
     data.to_csv(f'Data\\Generated\\{date.to_datetime().date()} LAT {min_lat} {max_lat} LON {min_lon} {max_lon} {no_of_points}x{no_of_points}.csv')
 
@@ -760,7 +754,7 @@ def combine_files():
 
 #read_and_update_file_ICOP23()
 
-combine_files()
+#combine_files()
 
 date_to_use = Time("2023-03-22")
 

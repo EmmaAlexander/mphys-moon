@@ -13,7 +13,7 @@ from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="mphys-moon")
 from geopy.extra.rate_limiter import RateLimiter
 geocode = RateLimiter(geolocator.reverse, min_delay_seconds=1)
-#df = df.copy('Deep').tail(10)
+
 
 def switch(cont_code):
     #if (cont_code == "UK"): # UK is not a continent so needs adjusting
@@ -41,7 +41,10 @@ def continent_get(lon, lat):
 
     if country_code=="UK" or country_code=="GB":
         return "ukuk&LAND=UK&KEY=UK"
-    if country_code=="ca":#add several centeral american countries
+    ca_countries=['BS','BZ','BM','KY','CR','CU','DO','SV','GT',
+                  'HT','HN','JM','MX','NI','PA','PR','TC'] #list of central american countries counted by open weather
+                    #does not include the lesser antilles islands
+    if np.in1d(country_code, ca_countries)[0]:#add several centeral american countries
         return "mamk&LAND=__&KEY=__"
     
     continent_code = pc.country_alpha2_to_continent_code(country_code)
@@ -71,17 +74,27 @@ def cloud_extract(date, lon, lat):
     table = str(table)
 
     #get names, codes and cloud level from table
-    names = re.findall("(?<=CEL=C\">)(.*?)(?= \()", table)
-    code = re.findall("(?<=WMO=)(.*?)(?=\&amp)", table)
-    cloud_level = re.findall("(?<=<td>)(\d)(?=<\/td>)", table)
+    names = np.array(re.findall("(?<=CEL=C\">)(.*?)(?= \()", table))
+    code = np.array(re.findall("(?<=WMO=)(.*?)(?=\&amp)", table))
+    cloud_level = np.array(re.findall("(?<=<\/a><\/td>\n<td>)(.*)(?=<\/td>\n<t)", table))
+    
+    if (len(names)<7): #not enough datapoints
+        return -3, -3
+    
+    cloud_valid = cloud_level!='not detectable'
+    cloud_level = cloud_level[cloud_valid]
+    code = code[cloud_valid]
+    names = names[cloud_valid]
+ 
+    #cloud_level = re.findall("(?<=<td>)(\d)(?=<\/td>)", table)
 
     # correct codes to agree with meteostat
     if "03931" in code: #tibenham
-        code[code.index(("03931"))] = "03546"
+        code[np.where((code=="03931"))[0]] = "03546"
     if "03684" in code: #stansted
-        code[code.index(("03684"))] = "03683"
+        code[np.where((code=="03684"))[0]] = "03683"
     if "03844" in code: #exeter
-        code[code.index(("03844"))] = "03839"
+        code[np.where((code=="03844"))[0]] = "03839"
     
     if (len(names)<7): #not enough datapoints
         return -3, -3
@@ -90,8 +103,8 @@ def cloud_extract(date, lon, lat):
     #get 50 nearby stations
     stations = Stations().nearby(lat,lon)
     station = stations.fetch(50)
-    print(names)
-    print(station)
+    #print(names)
+    #print(station)
 
     #get the closest thats also online
     first_agree_index = np.where(np.in1d(station.index, code))[0]
@@ -101,7 +114,7 @@ def cloud_extract(date, lon, lat):
     distance = station['distance'][first_agree_index[0]]
 
     cloud_for_point = cloud_level[np.where(np.in1d(code, closest_code))[0][0]]
-    return int(cloud_for_point), float(distance)
+    return int(cloud_for_point)/8, float(distance)
 
 def pandas_cloud(df):
     print(df['Index'])
@@ -114,11 +127,13 @@ def main():
         data_file = '../Data/moon_sighting_data.csv'
 
     df = pd.read_csv(data_file, encoding="utf-8")
-    df = df[df["Source"]=="ICOP23"]
+    #df = df[df["Source"]=="YALLOP"]
+    #df = df.head(530)
+    #df = df.tail(1)
 
     df['Cloud cover'], df['Distance'] = zip(*df.apply(pandas_cloud, axis=1))
-    #df = df[df['Cloud cover'] >= 0]
-    df.to_csv('cloudtestICOP.csv', index=False)
+    df = df[df['Cloud cover'] >= 0]
+    df.to_csv('cloud_data.csv', index=False)
     return 0
 
 main()
