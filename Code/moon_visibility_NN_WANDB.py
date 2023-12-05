@@ -8,12 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import TensorDataset
-#import os
-#print(os.getcwd())
 import wandb
 wandb.login()
-
-#wandb.init(project="moon_visibility_NN_WANDB")
 
 sweep_config = {
     "method": "bayes", # try grid or random
@@ -85,7 +81,7 @@ else:
 
     data = pd.read_csv(data_file)
 
-data = data.drop(["Index","q","W","q'","W'",'Visibility','Source'], axis = 1)
+data = data.drop(["Index","q","W","q'",'Source'], axis = 1)
 
 if METHOD: # method and methods columns, will be changed
     data = data.drop('Seen', axis = 1) # replaced by method column

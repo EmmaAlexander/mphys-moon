@@ -95,9 +95,6 @@ def cloud_extract(date, lon, lat):
         code[np.where((code=="03684"))[0]] = "03683"
     if "03844" in code: #exeter
         code[np.where((code=="03844"))[0]] = "03839"
-    
-    #if (len(names)<7): #not enough datapoints
-    #    return -3, -3
 
     day = best_time.to_datetime()
     #get 50 nearby stations

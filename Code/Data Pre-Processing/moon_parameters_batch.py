@@ -690,9 +690,9 @@ def yallop_to_binary(q_values):
     return quantified_q
 
 def generate_parameters(date,min_lat, max_lat, min_lon, max_lon,no_of_points):
-
+    print("Running")
     num_of_rows = no_of_points*no_of_points
-    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols[0:-5])
+    data = pd.DataFrame(index=np.arange(0, num_of_rows), columns=cols[0:-4])
     data.index.name="Index"
 
     lat_arr = np.linspace(min_lat, max_lat, no_of_points)
@@ -752,16 +752,4 @@ def combine_files():
 #combine_files()
 
 date_to_use = Time("2023-03-22")
-
-date_to_use = Time("2023-12-13")
-generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
-date_to_use = Time("2023-12-14")
-##generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
-date_to_use = Time("2023-12-15")
-#generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=40)
-date_to_use = Time("2023-12-14") #UK
-generate_parameters(date_to_use,min_lat=48, max_lat=60, min_lon=-8, max_lon=2, no_of_points=40)
-
-# raw_data = pd.read_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv')
-# raw_data["Date"] = Time(raw_data["Date"],format="jd").to_datetime()
-# raw_data.to_csv('Data\\schaefer_odeh_allawi_2022_sighting_data_with_params2.csv')
+generate_parameters(date_to_use,min_lat=-60, max_lat=60, min_lon=-180, max_lon=180, no_of_points=100)
