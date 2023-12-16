@@ -15,7 +15,7 @@ The "moon_visibility_calculations.ipynb" file has a few uses. This file can gene
 This folder contains code to scrape data from online. 'cloudcoverbatch.py'takes cloud cover data from weatheronline.com and generates the valid sightings to a file. Both of the ICOP data scrape files take sighting data from the ICOP website.
 
 ## Data
-The data folder contains files of each data set used, and sets of data for generated longitude and lattitude. Most importantly, this folder contains the combined data set and cloud data sets.
+The data folder contains files of each data set used, and sets of data for generated longitude and latitude. Most importantly, this folder contains the combined data set and cloud data sets.
 
 ## Initial Resources
 This folder contains material initialy given by our MPhys supervisor when starting the project. Essentially good background information.
