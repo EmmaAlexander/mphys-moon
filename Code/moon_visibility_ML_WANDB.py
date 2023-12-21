@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning) #Issue with xgboost & new pandas version
+
 import pandas as pd
 import numpy as np
 
@@ -78,39 +81,20 @@ MULTI_LABEL_METHOD = False #Replace naked eye seen column with either seen, visu
 XGBOOST = True #Use xgboost forest or random forest
 RANDOM = False # replace data with random arrays
 CLOUDCUT = False # cut all complete cloud cover data points
-REPEAT_ACCURACY = False #Run 20 times and calculate average accuracy
-LINUX = True #Use linux file paths
+LINUX = False #Use linux file paths
 USE_GPU = True #Use a GPU
 WANDB = True # Log to weights and biases.
 
 TITLE = f"{'XGBoost' if XGBOOST else 'Random Forest'} {'Eye' if not MULTI_LABEL_METHOD and not MULTI_OUTPUT_METHOD else ''}{'Multi-label' if MULTI_LABEL_METHOD else ''}{'Multi-output' if MULTI_OUTPUT_METHOD else ''} visibility"
 
-PARAMS = {'learning_rate': 0.5, 'max_depth': 2, 'n_estimators': 50}
+PARAMS = {'learning_rate': 0.2, 'max_depth': 6, 'n_estimators': 50}
 
-icouk_data_file = '..\\Data\\icouk_sighting_data_with_params.csv'
-icop_data_file = '..\\Data\\icop_ahmed_2020_sighting_data_with_params.csv'
-alrefay_data_file = '..\\Data\\alrefay_2018_sighting_data_with_params.csv'
-allawi_data_file = '..\\Data\\schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
-yallop_data_file = '..\\Data\\Data/yallop_sighting_data_with_params.csv'
+data_file = 'Data/moon_sighting_data.csv'
 
-if LINUX:
-    icouk_data_file = '../Data/icouk_sighting_data_with_params.csv'
-    icop_data_file = '../Data/icop_ahmed_2020_sighting_data_with_params.csv'
-    alrefay_data_file = '../Data/alrefay_2018_sighting_data_with_params.csv'
-    allawi_data_file = '../Data/schaefer_odeh_allawi_2022_sighting_data_with_params.csv'
-    yallop_data_file = '../Data/yallop_sighting_data_with_params.csv'
-
-icouk_data = pd.read_csv(icouk_data_file)
-icop_data = pd.read_csv(icop_data_file)
-alrefay_data = pd.read_csv(alrefay_data_file)
-allawi_data = pd.read_csv(allawi_data_file)
-yallop_data = pd.read_csv(yallop_data_file)
-
-
-data = pd.concat([icouk_data,icop_data,alrefay_data,yallop_data])
+data = pd.read_csv(data_file)
 
 #Drop index, dependent parameters (q value etc) and visibility scale
-data = data.drop(["Index","q","W","q'","W'","Visibility","Source"], axis = 1)
+data = data.drop(["Index","q","W","q'","Source"], axis = 1)
 
 if MULTI_OUTPUT_METHOD:
     data = data.drop(["Seen", "Method"], axis = 1) # replaced by methods column
@@ -193,52 +177,36 @@ def train():
     wandb.init(config=config_defaults)  # defaults are over-ridden during the sweep
     config = wandb.config
 
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2) # 80/20 training/test split
+    def traintestml(X,y, rf):
+        accuracy_arr = []
+        roc_arr = []
+        for i in range(10):
+            x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+            # Fitting takes the input and "truth" data for classification purposes
+            rf.fit(x_train, y_train)
+            # Produce predictions for the classification of your training dataset using your model:
+            y_pred = rf.predict(x_test)
+            #print("Accuracy on testing dataset:",accuracy_score(y_test, y_pred))
+
+            accuracy_arr.append(accuracy_score(y_test, y_pred))
+            if MULTI_LABEL_METHOD:
+                y_pred_prob = model.predict_proba(x_test)
+                roc_auc = roc_auc_score(y_test, y_pred_prob, multi_class="ovr")
+            else:
+                y_pred_prob = model.predict_proba(x_test)[:, 1] 
+                roc_auc = roc_auc_score(y_test, y_pred_prob)
+            roc_arr.append(roc_auc)
+
+        accuracy_avg = np.mean(accuracy_arr)
+        accuracy_std = np.std(accuracy_arr)
+        roc_avg = np.mean(roc_arr)
+        roc_std = np.std(roc_arr)
+        return accuracy_avg,accuracy_std,roc_avg,roc_std
 
     model = select_model()
     model = model.set_params(**config)
-    # Fitting takes the input and "truth" data for classification purposes
-    model.fit(x_train, y_train)
-
-    def get_easiest_method_array(methods):
-        easiest_methods = np.zeros(methods.shape)
-        easiest_methods[np.arange(0,methods.shape[0],1),np.argmax(methods,axis=1)] = 1
-        return easiest_methods
-
-    def get_easiest_method_names(methods):
-        easiest_methods = get_easiest_method_array(methods)
-        return mlb.inverse_transform(easiest_methods.astype(int))
-
-    # Produce predictions for the classification of your training dataset using your model:
-    y_pred = model.predict(x_train)
-
-    # plot the accuracies of said predictions
-    print("Accuracy on training dataset:",accuracy_score(y_train, y_pred))
-    rf_acc_train = accuracy_score(y_train, y_pred)
-    y_pred = model.predict(x_test)
-
-    print("Accuracy on testing dataset:", accuracy_score(y_test, y_pred))
-    rf_acc_test = accuracy_score(y_test, y_pred)
-
-    wandb.log({"Accuracy": rf_acc_test})
-
-    if MULTI_OUTPUT_METHOD:
-        print("Accuracy on testing dataset (easiest method only):", accuracy_score(get_easiest_method_names(y_test), get_easiest_method_names(y_pred)))
-
-    if MULTI_OUTPUT_METHOD:
-        #y_pred_prob = rf.predict_proba(x_test)
-        #roc_auc = roc_auc_score(y_test, y_pred_prob)
-        print("Not currently working")
-    elif MULTI_LABEL_METHOD:
-        y_pred_prob = model.predict_proba(x_test)
-        roc_auc = roc_auc_score(y_test, y_pred_prob, multi_class="ovr")
-        print(f"ROC curve {roc_auc}")
-        wandb.log({"ROC curve" :roc_auc})
-    else:
-        y_pred_prob = model.predict_proba(x_test)[:, 1] 
-        roc_auc = roc_auc_score(y_test, y_pred_prob)
-        print(f"ROC curve {roc_auc}")
-        wandb.log({"ROC curve" :roc_auc})
+    accuracy_avg,accuracy_std,roc_avg,roc_std=traintestml(X,y, model)
+    wandb.log({"Accuracy": accuracy_avg,"Accuracy std": accuracy_std,"ROC":roc_avg,"ROC std": roc_std})
 
 sweep_id = wandb.sweep(sweep_config, project="moon_visibility_xgboost")
 wandb.agent(sweep_id, train, count=200)

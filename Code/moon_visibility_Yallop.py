@@ -52,7 +52,6 @@ def get_geocentric_parallax(object_position,distance):
     p = np.arcsin((a/r)*np.sin(z.radian))
     return Angle(p)
 
-
 def get_q_value(alt_diff, width):
     #Calculate q-test value using Yallop formula
 
@@ -61,7 +60,6 @@ def get_q_value(alt_diff, width):
     q = (ARCV.deg - (11.8371 - 6.3226*W + 0.7319*W**2 - 0.1018*W**3 )) / 10
 
     return q
-
 
 def get_time_zone(latitude,longitude):
     #Returns an astropy timedelta object with correct UTC offset
@@ -94,7 +92,6 @@ def get_sunset_time_old(obs_date, lat_arr,long_arr):
     date_arr = np.full(np.size(lat_arr),obs_date.to_datetime())
     sunsets = get_times(date_arr,lng=long_arr,lat=lat_arr)["sunset"]
     return sunsets
-
 
 def get_moonset_time(obs_date,lat, lon,moonrise=False):
     #Gets moonset time using skyfield (MEDIUM)
@@ -151,7 +148,6 @@ def get_sunset_time(obs_date,lat, lon,sunrise=False):
         sunset = obs_date
 
     return sunset
-
 
 def get_sunset_moonset(d,coords,display=False): #NOT IN USE
     #Gets sunset and moonset using astroplan (VERY SLOW)
@@ -342,12 +338,12 @@ def get_moon_params(d,lat,lon,sunset=None,moonset=None,time_given=False,display=
 
 #PLOTTING MAP ----------------------------------------------------------------
 
-def plot_visibility_at_date(obs_date):
+def plot_visibility_at_date(obs_date, no_of_points=20):
     #Plots a visibility graph at a specified date
 
     #lat/long over the globe
-    lat_arr = np.linspace(-60, 60, 20)
-    long_arr = np.linspace(-180, 180, 20)
+    lat_arr = np.linspace(-60, 60, no_of_points)
+    long_arr = np.linspace(-180, 180, no_of_points)
     q_vals = np.zeros((len(lat_arr),len(long_arr)))
 
     start = time.time()
@@ -372,7 +368,7 @@ def plot_visibility_at_date(obs_date):
 
     #create_globe_plot(obs_date, lat_arr,long_arr, q_vals)
 
-    #create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
+    create_globe_plot_set(obs_date, lat_arr,long_arr, q_vals)
 
     #create_globe_animation(obs_date, lat_arr,long_arr, q_vals)
 
@@ -423,7 +419,6 @@ def create_globe_animation(obs_date, lat_arr,long_arr, q_val):
     plotter.add_title(f"Global moon visibility at best time ({title_date})",font="arial",font_size=12)
     #plotter.export_obj(f"Globes\\{title_date} {len(long_arr)}x{len(long_arr)}.obj")
     plotter.show()
-
 
 def create_globe_plot(obs_date,lat_arr,long_array,q_val):
     #Plots moon visibility across a globe
@@ -502,8 +497,8 @@ def create_globe_plot_set(obs_date,lat_arr,long_array,q_val):
 
     title_date = obs_date.to_datetime().date()
     plt.suptitle(f"Global moon visibility at best time ({title_date})", fontsize=25)
+    plt.savefig(f"Global moon visibility at best time globes ({title_date}).png",dpi=200)
     plt.show()
-
 
 def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     #Plots moon visibility across a world map
@@ -540,23 +535,9 @@ def create_contour_plot(obs_date,lat_arr,long_array,q_val):
     plt.show()
 
 date_to_plot = Time("2023-03-22")
-#plot_visibility_at_date(date_to_plot)
-
-date_to_check = Time("1987-5-29") #Does not work, best time is 03:25 1987-5-30
-lat = 39.2
-lon = -105.5
-#get_moon_params(date_to_check,lat,lon,display=True)
-
-date_to_check = Time("1990-11-19") #Works, best time is 22:00 1990-11-19
-lat = 39
-lon = -76.8
-#get_moon_params(date_to_check,lat,lon,display=True)
+plot_visibility_at_date(date_to_plot,40)
 
 date_to_check = Time("1989-4-4") #Works, best time is 22:00 1990-11-19
 lat = 41.9
 lon = -88.7
-get_moon_params(date_to_check,lat,lon,display=True)
-
-date_to_check = Time("2023-03-22")
-
-#print(get_moon_age(date_to_check))
+#get_moon_params(date_to_check,lat,lon,display=True)
