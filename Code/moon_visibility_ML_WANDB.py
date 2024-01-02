@@ -118,11 +118,6 @@ else:
 
     ptype = ["Seen", "Not_seen"]
 
-if RANDOM:
-    data.insert(1,"Random1",np.random.rand(data.shape[0],1))
-    data.insert(2,"Random2",np.random.rand(data.shape[0],1))
-    data = data[['Seen', "Random1","Random2"]]
-
 if CLOUDCUT:
     data = data[data["Cloud Level"] <= 0.5]
     #data = data[data["Cloud Level"] == 0]
